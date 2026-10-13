@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
-from database import init_db
+from database import init_db, IS_POSTGRES
 from routes.contacts_router import router as contacts_router
 from routes.products_router import router as products_router
 from routes.purchases_router import router as purchases_router
@@ -22,14 +22,18 @@ from routes.others_router import router as others_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("Starting Rock Palace - Aster Billing System API (MySQL Mode)...")
-    init_db()
+    mode = "PostgreSQL (Supabase)" if IS_POSTGRES else "MySQL"
+    print(f"Starting Rock Palace - Aster Billing System API ({mode})...")
+    try:
+        init_db()
+    except Exception as e:
+        print(f"[Warning] init_db deferment or warning: {e}")
     yield
     print("Shutting down Rock Palace API...")
 
 app = FastAPI(
     title="Rock Palace - Aster Billing & Accounting API",
-    description="Web-based accounting & stone billing system built on MySQL (phpMyAdmin `billing` database)",
+    description="Web-based accounting & stone billing system built on FastAPI with Supabase/PostgreSQL & MySQL support",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -37,7 +41,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -65,11 +69,12 @@ def health_check():
     return {
         "status": "healthy",
         "system": "Aster Billing (Rock Palace Stone Shop)",
-        "database": "MySQL 8.0 `billing`",
+        "database": "PostgreSQL (Supabase)" if IS_POSTGRES else "MySQL",
         "currency": "INR (₹)",
         "version": "1.0.0"
     }
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8100, reload=True)
+    port = int(os.getenv("PORT", 8100))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
