@@ -1,0 +1,14 @@
+# Python virtual environment & cache
+backend/venv/
+**/__pycache__/
+*.py[cod]
+
+# Node dependencies & production build
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Local databases, logs & environment
+*.log
+backend/billing.db
+.DS_Store

@@ -1,0 +1,12 @@
+{
+  "name": "billing-app",
+  "version": "1.0.0",
+  "description": "Rock Palace - Aster Billing Software",
+  "scripts": {
+    "build": "npm --prefix frontend run build",
+    "dev": "npm --prefix frontend run dev",
+    "start": "./start.sh",
+    "backend": "./run_backend.sh",
+    "frontend": "./run_frontend.sh"
+  }
+}
