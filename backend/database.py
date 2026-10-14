@@ -4,6 +4,13 @@ from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from pathlib import Path
 from contextlib import contextmanager
+from dotenv import load_dotenv
+
+# Load .env file automatically
+_BASE_DIR = Path(__file__).resolve().parent
+load_dotenv(_BASE_DIR / ".env")
+load_dotenv(_BASE_DIR.parent / ".env")
+load_dotenv()
 
 # Detect Database Mode
 DATABASE_URL = os.getenv('DATABASE_URL') or os.getenv('POSTGRES_URL') or os.getenv('SUPABASE_DB_URL')
