@@ -3,10 +3,21 @@
 set -o errexit
 
 echo "=========================================================="
-echo " Starting Render Backend Build from Root                 "
+echo " Starting Render Full-Stack Build                        "
 echo "=========================================================="
 
-cd backend
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Build frontend if node/npm is available
+if command -v npm &> /dev/null; then
+    echo "Building frontend dist..."
+    cd "$DIR/frontend"
+    npm install
+    npm run build
+    cd "$DIR"
+fi
+
+cd "$DIR/backend"
 
 # If inside local dev and venv exists, activate it; on Render, Render manages its own venv
 if [ -z "$VIRTUAL_ENV" ] && [ -d "venv" ]; then

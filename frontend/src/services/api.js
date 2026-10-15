@@ -160,4 +160,11 @@ export const api = {
   },
   getDuesReport: () => request('/others/reports/dues'),
   getGstSummary: () => request('/others/reports/gst'),
+
+  // 9. Authentication
+  login: (username, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
+  logout: () => request('/auth/logout', { method: 'POST' }),
+  getMe: (userId) => request(`/auth/me${userId ? `?user_id=${userId}` : ''}`),
+  changePassword: (data) => request('/auth/change-password', { method: 'POST', body: JSON.stringify(data) }),
+  getDemoUsers: () => request('/auth/demo-users'),
 };

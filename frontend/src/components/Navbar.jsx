@@ -8,10 +8,20 @@ import {
   Layers, 
   BookOpen, 
   MoreHorizontal,
-  Plus
+  Plus,
+  LogOut,
+  UserCheck
 } from 'lucide-react';
 
-export default function Navbar({ activeTab, setActiveTab, onQuickSale, onQuickPurchase, companyName }) {
+export default function Navbar({ 
+  activeTab, 
+  setActiveTab, 
+  onQuickSale, 
+  onQuickPurchase, 
+  companyName,
+  currentUser,
+  onLogout
+}) {
   const tabs = [
     { id: 'daybook', label: 'Daybook', icon: BookOpen },
     { id: 'sales', label: 'Sales', icon: FileText },
@@ -22,6 +32,13 @@ export default function Navbar({ activeTab, setActiveTab, onQuickSale, onQuickPu
     { id: 'contacts', label: 'Contacts', icon: Users },
     { id: 'others', label: 'Others', icon: MoreHorizontal },
   ];
+
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    const parts = name.split(' ');
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return name.substring(0, 2).toUpperCase();
+  };
 
   return (
     <header className="top-header no-print">
@@ -60,6 +77,29 @@ export default function Navbar({ activeTab, setActiveTab, onQuickSale, onQuickPu
           <Plus size={14} />
           <span>+ New Sale</span>
         </button>
+
+        {currentUser && (
+          <div className="user-profile-bar">
+            <div className="user-profile-badge" title={`${currentUser.name} (${currentUser.role})`}>
+              <div className="user-avatar-circle">
+                {getInitials(currentUser.name)}
+              </div>
+              <div className="user-details-text">
+                <span className="user-name-display">{currentUser.name.split('(')[0].trim()}</span>
+                <span className="user-role-tag">{currentUser.role}</span>
+              </div>
+            </div>
+
+            <button 
+              className="btn-logout" 
+              onClick={onLogout} 
+              title="Sign Out of Terminal"
+            >
+              <LogOut size={16} />
+              <span className="logout-text">Logout</span>
+            </button>
+          </div>
+        )}
       </div>
     </header>
   );

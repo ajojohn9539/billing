@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
+import LoginView from './components/LoginView';
 import DaybookView from './components/DaybookView';
 import SalesView from './components/SalesView';
 import PurchaseView from './components/PurchaseView';
@@ -11,6 +12,16 @@ import OthersView from './components/OthersView';
 import { api } from './services/api';
 
 export default function App() {
+  // Session Authentication State
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('billing_user') || sessionStorage.getItem('billing_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
   const [activeTab, setActiveTab] = useState('daybook');
   const [currencySymbol, setCurrencySymbol] = useState('₹');
   const [companyName, setCompanyName] = useState('Rock Palace');
@@ -42,21 +53,48 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (currentUser) {
+      refreshAll();
+    }
+  }, [currentUser]);
+
+  const handleLoginSuccess = (user, token) => {
+    setCurrentUser(user);
     refreshAll();
-  }, []);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+    } catch (e) {
+      console.warn('Logout API warning:', e);
+    }
+    localStorage.removeItem('billing_user');
+    localStorage.removeItem('billing_token');
+    sessionStorage.removeItem('billing_user');
+    sessionStorage.removeItem('billing_token');
+    setCurrentUser(null);
+  };
+
+  // If user is not logged in, show the dedicated stone shop login terminal
+  if (!currentUser) {
+    return <LoginView onLoginSuccess={handleLoginSuccess} />;
+  }
 
   const suppliers = contacts.filter(c => c.type === 'Supplier' || c.type === 'Both');
   const customers = contacts.filter(c => c.type === 'Customer' || c.type === 'Both');
 
   return (
     <div className="app-layout">
-      {/* Top Navbar with 8 Menus from Documentation */}
+      {/* Top Navbar with 8 Menus + User Profile & Logout */}
       <Navbar 
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onQuickSale={() => setActiveTab('sales')}
         onQuickPurchase={() => setActiveTab('purchase')}
         companyName={companyName}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* Main Viewport */}

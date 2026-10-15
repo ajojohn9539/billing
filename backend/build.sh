@@ -6,6 +6,19 @@ echo "=========================================================="
 echo " Starting Render Backend Build: Rock Palace Aster Billing "
 echo "=========================================================="
 
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Build frontend if node/npm is available
+if command -v npm &> /dev/null; then
+    echo "Building frontend dist from backend/build.sh..."
+    cd "$DIR/../frontend"
+    npm install
+    npm run build
+    cd "$DIR"
+fi
+
+cd "$DIR"
+
 # If inside local dev and venv exists, activate it; on Render, Render manages its own venv
 if [ -z "$VIRTUAL_ENV" ] && [ -d "venv" ]; then
     echo "Activating virtualenv..."
