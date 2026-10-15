@@ -12,3 +12,8 @@ frontend/dist/
 *.log
 backend/billing.db
 .DS_Store
+
+# Environment files
+.env
+.env.*
+backend/.env
