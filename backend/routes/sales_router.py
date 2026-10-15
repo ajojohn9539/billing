@@ -116,7 +116,7 @@ def get_sale(sale_id: int):
     """, (sale_id,))
 
     settings = query_one("SELECT * FROM settings WHERE id = 1")
-    bank = query_one("SELECT * FROM bank_accounts WHERE bank_name ILIKE '%INDIAN BANK%' OR id = 1 LIMIT 1")
+    bank = query_one("SELECT * FROM bank_accounts WHERE id = 1")
 
     return {
         "sale": sale,
