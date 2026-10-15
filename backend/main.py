@@ -79,16 +79,8 @@ def db_diagnostic():
     
     masked_url = None
     if DATABASE_URL:
-        try:
-            parsed = urllib.parse.urlsplit(DATABASE_URL)
-            netloc = parsed.hostname or ''
-            if parsed.port:
-                netloc += f":{parsed.port}"
-            if parsed.username:
-                netloc = f"{parsed.username}:****@{netloc}"
-            masked_url = urllib.parse.urlunsplit((parsed.scheme, netloc, parsed.path, parsed.query, parsed.fragment))
-        except Exception:
-            masked_url = "Error parsing URL"
+        import re
+        masked_url = re.sub(r':([^:@]+)@', ':****@', DATABASE_URL)
 
     diag = {
         "is_postgres": IS_POSTGRES,

@@ -17,7 +17,7 @@ def normalize_database_url(url: str) -> str:
             user = f'postgres.{ref}'
         
         password = f':{parsed.password}' if parsed.password is not None else ''
-        new_netloc = f'{user}{password}@aws-0-ap-south-1.pooler.supabase.com:6543'
+        new_netloc = f'{user}{password}@aws-0-ap-northeast-2.pooler.supabase.com:6543'
         
         query = parsed.query
         if 'sslmode' not in query:
