@@ -4,10 +4,12 @@ import re
 def normalize_database_url(url: str) -> str:
     if not url:
         return url
+    url = url.strip()
+    for q in ('"', "'"): url = url.strip(q)
+    url = url.strip()
     if url.startswith('postgres://'):
         url = url.replace('postgres://', 'postgresql://', 1)
-        
-    # Auto-convert IPv6-only Supabase direct host to IPv4 connection pooler host
+
     match = re.search(r'@db\.([a-z0-9]+)\.supabase\.co(?::\d+)?', url)
     if match:
         ref = match.group(1)
@@ -46,7 +48,7 @@ load_dotenv(_BASE_DIR.parent / ".env")
 load_dotenv()
 
 # Detect Database Mode
-DATABASE_URL = os.getenv('DATABASE_URL') or os.getenv('POSTGRES_URL') or os.getenv('SUPABASE_DB_URL')
+DATABASE_URL = (os.getenv('DATABASE_URL') or os.getenv('POSTGRES_URL') or os.getenv('SUPABASE_DB_URL') or '').strip().strip('"\'').strip()
 DATABASE_URL = normalize_database_url(DATABASE_URL)
 
 if DATABASE_URL and '[YOUR-PASSWORD]' in DATABASE_URL:
