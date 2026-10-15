@@ -71,6 +71,51 @@ app.include_router(stock_router, prefix="/api")
 app.include_router(daybook_router, prefix="/api")
 app.include_router(others_router, prefix="/api")
 
+
+@app.get("/api/db-diagnostic")
+def db_diagnostic():
+    import urllib.parse
+    from database import DATABASE_URL, IS_POSTGRES, get_db
+    
+    masked_url = None
+    if DATABASE_URL:
+        try:
+            parsed = urllib.parse.urlsplit(DATABASE_URL)
+            netloc = parsed.hostname or ''
+            if parsed.port:
+                netloc += f":{parsed.port}"
+            if parsed.username:
+                netloc = f"{parsed.username}:****@{netloc}"
+            masked_url = urllib.parse.urlunsplit((parsed.scheme, netloc, parsed.path, parsed.query, parsed.fragment))
+        except Exception:
+            masked_url = "Error parsing URL"
+
+    diag = {
+        "is_postgres": IS_POSTGRES,
+        "database_url_configured": bool(DATABASE_URL),
+        "database_url_preview": masked_url,
+        "has_placeholder": bool(DATABASE_URL and ('[YOUR-PASSWORD]' in DATABASE_URL or 'db.supabase.co' in DATABASE_URL)),
+        "status": "pending",
+        "error": None,
+        "table_count": 0
+    }
+
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cur:
+                if IS_POSTGRES:
+                    cur.execute("SELECT COUNT(*) AS total_tables FROM information_schema.tables WHERE table_schema = 'public';")
+                else:
+                    cur.execute("SELECT COUNT(*) AS total_tables FROM information_schema.tables WHERE table_schema = 'billing';")
+                row = cur.fetchone()
+                diag["status"] = "connected"
+                diag["table_count"] = row["total_tables"] if isinstance(row, dict) else row[0]
+    except Exception as e:
+        diag["status"] = "failed"
+        diag["error"] = str(e)
+
+    return diag
+
 @app.get("/api/health")
 def health_check():
     return {

@@ -14,8 +14,16 @@ load_dotenv()
 
 # Detect Database Mode
 DATABASE_URL = os.getenv('DATABASE_URL') or os.getenv('POSTGRES_URL') or os.getenv('SUPABASE_DB_URL')
-if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
-    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+if DATABASE_URL:
+    if DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    if 'supabase' in DATABASE_URL and 'sslmode' not in DATABASE_URL:
+        sep = '&' if '?' in DATABASE_URL else '?'
+        DATABASE_URL = f"{DATABASE_URL}{sep}sslmode=require"
+
+# Check if DATABASE_URL is still placeholder
+if DATABASE_URL and ('[YOUR-PASSWORD]' in DATABASE_URL or 'db.supabase.co' in DATABASE_URL):
+    print("[Database Warning] DATABASE_URL contains placeholder values. Please set your real Supabase connection URI in Render environment variables.")
 
 IS_POSTGRES = bool(DATABASE_URL)
 
