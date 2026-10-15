@@ -18,7 +18,15 @@ async function request(endpoint, options = {}) {
       let errDetail = 'Request failed';
       try {
         const errorData = await res.json();
-        errDetail = errorData.detail || errorData.message || errDetail;
+        if (typeof errorData.detail === 'string') {
+          errDetail = errorData.detail;
+        } else if (Array.isArray(errorData.detail)) {
+          errDetail = errorData.detail.map(d => `${d.loc ? d.loc.slice(-1)[0] + ': ' : ''}${d.msg}`).join(', ');
+        } else if (errorData.detail && typeof errorData.detail === 'object') {
+          errDetail = JSON.stringify(errorData.detail);
+        } else {
+          errDetail = errorData.message || errDetail;
+        }
       } catch (e) {
         errDetail = res.statusText || errDetail;
       }

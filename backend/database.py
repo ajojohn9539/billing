@@ -1,3 +1,36 @@
+import urllib.parse
+import re
+
+def normalize_database_url(url: str) -> str:
+    if not url:
+        return url
+    if url.startswith('postgres://'):
+        url = url.replace('postgres://', 'postgresql://', 1)
+        
+    # Auto-convert IPv6-only Supabase direct host to IPv4 connection pooler host
+    match = re.search(r'@db\.([a-z0-9]+)\.supabase\.co(?::\d+)?', url)
+    if match:
+        ref = match.group(1)
+        parsed = urllib.parse.urlsplit(url)
+        user = parsed.username or 'postgres'
+        if not user.endswith(f'.{ref}') and user == 'postgres':
+            user = f'postgres.{ref}'
+        
+        password = f':{parsed.password}' if parsed.password is not None else ''
+        new_netloc = f'{user}{password}@aws-0-ap-south-1.pooler.supabase.com:6543'
+        
+        query = parsed.query
+        if 'sslmode' not in query:
+            query = f'{query}&sslmode=require' if query else 'sslmode=require'
+            
+        return urllib.parse.urlunsplit((parsed.scheme, new_netloc, parsed.path, query, parsed.fragment))
+
+    if 'supabase' in url and 'sslmode' not in url:
+        sep = '&' if '?' in url else '?'
+        url = f'{url}{sep}sslmode=require'
+
+    return url
+
 import os
 import sys
 from datetime import date, datetime, time, timedelta
@@ -14,15 +47,9 @@ load_dotenv()
 
 # Detect Database Mode
 DATABASE_URL = os.getenv('DATABASE_URL') or os.getenv('POSTGRES_URL') or os.getenv('SUPABASE_DB_URL')
-if DATABASE_URL:
-    if DATABASE_URL.startswith('postgres://'):
-        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-    if 'supabase' in DATABASE_URL and 'sslmode' not in DATABASE_URL:
-        sep = '&' if '?' in DATABASE_URL else '?'
-        DATABASE_URL = f"{DATABASE_URL}{sep}sslmode=require"
+DATABASE_URL = normalize_database_url(DATABASE_URL)
 
-# Check if DATABASE_URL is still placeholder
-if DATABASE_URL and ('[YOUR-PASSWORD]' in DATABASE_URL or 'db.supabase.co' in DATABASE_URL):
+if DATABASE_URL and '[YOUR-PASSWORD]' in DATABASE_URL:
     print("[Database Warning] DATABASE_URL contains placeholder values. Please set your real Supabase connection URI in Render environment variables.")
 
 IS_POSTGRES = bool(DATABASE_URL)
