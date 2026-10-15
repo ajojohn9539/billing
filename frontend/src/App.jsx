@@ -9,6 +9,7 @@ import StockView from './components/StockView';
 import DamageEntryView from './components/DamageEntryView';
 import CustomersView from './components/CustomersView';
 import OthersView from './components/OthersView';
+import BackupMigrationView from './components/BackupMigrationView';
 import { api } from './services/api';
 
 export default function App() {
@@ -168,6 +169,14 @@ export default function App() {
             onSelectCustomerInvoices={(id) => {
               setActiveTab('sales');
             }}
+          />
+        )}
+
+                {/* Backup & Data Migration Module */}
+        {activeTab === 'backup' && (
+          <BackupMigrationView 
+            currency={currencySymbol}
+            onRefresh={refreshAll}
           />
         )}
 

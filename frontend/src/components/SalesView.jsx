@@ -784,9 +784,12 @@ export default function SalesView({ sales, customers, products, currency = '₹'
                 {/* 1. Header with Circular JR Logo */}
                 <div className="jr-bill-header">
                   <div className="jr-bill-brand-left">
-                    <div className="jr-bill-logo-circle">
-                      <span>JR</span>
-                    </div>
+                    <img 
+                      src="/logo.png" 
+                      alt="JR Logo" 
+                      className="jr-bill-logo-circle" 
+                      style={{ width: '54px', height: '54px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #0284c7' }} 
+                    />
                     <div className="jr-bill-brand-titles">
                       <h1 className="jr-bill-main-title">JR MARBLES & GRANITES</h1>
                       <div className="jr-bill-sub-title">CHENGAMANADU</div>

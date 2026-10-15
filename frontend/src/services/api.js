@@ -167,4 +167,32 @@ export const api = {
   getMe: (userId) => request(`/auth/me${userId ? `?user_id=${userId}` : ''}`),
   changePassword: (data) => request('/auth/change-password', { method: 'POST', body: JSON.stringify(data) }),
   getDemoUsers: () => request('/auth/demo-users'),
+
+  // 10. Backup, Data Migration (XML, Excel, SQL), Cron & PDF Documentation
+  getBackupSettings: () => request('/backup/settings'),
+  updateBackupSettings: (data) => request('/backup/settings', { method: 'PUT', body: JSON.stringify(data) }),
+  getBackupLogs: () => request('/backup/logs'),
+  runDailyBackup: () => request('/backup/run-daily-backup', { method: 'POST' }),
+  importPreview: async (formData) => {
+    const res = await fetch(`${BASE_URL}/backup/import-preview`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Failed to preview import file');
+    }
+    return res.json();
+  },
+  importData: async (formData) => {
+    const res = await fetch(`${BASE_URL}/backup/import`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Import failed');
+    }
+    return res.json();
+  },
 };

@@ -83,7 +83,7 @@ export default function LoginView({ onLoginSuccess }) {
         {/* Left Side: Business Showcase / Info Panel */}
         <div className="login-business-panel">
           <div className="portal-brand-badge">
-            <div className="jr-circle-logo">JR</div>
+            <img src="/logo.png" alt="JR Logo" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.4); box-shadow: 0 0 20px rgba(2, 132, 199, 0.5);" />
             <div className="portal-brand-text">
               <h2>JR MARBLES & GRANITES</h2>
               <p className="portal-location">CHENGAMANADU, KOTTARAKKARA</p>
@@ -140,7 +140,7 @@ export default function LoginView({ onLoginSuccess }) {
         <div className="login-card">
           <div className="login-header">
             <div className="login-logo-glow">
-              <div className="jr-circle-logo-sm">JR</div>
+              <img src="/logo.png" alt="JR Logo" style="width: 54px; height: 54px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.3); box-shadow: 0 0 15px rgba(2, 132, 199, 0.4);" />
             </div>
             <h2 className="login-title">Staff Portal Sign In</h2>
             <p className="login-subtitle">Authorized Staff Terminal • Chengamanadu</p>
@@ -245,9 +245,9 @@ export default function LoginView({ onLoginSuccess }) {
 
           {/* Quick Demo Credentials */}
           <div className="login-demo-section">
-            <div className="demo-section-header">
-              <KeyRound size={14} />
-              <span>Quick Staff Logins (1-Click Fill)</span>
+            <div className="demo-section-header" style="display: flex; align-items: center; gap: 8px;">
+              <img src="/logo.png" alt="JR Logo" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(255, 255, 255, 0.4); box-shadow: 0 0 8px rgba(2, 132, 199, 0.5);" />
+              <span style="font-size: 0.74rem; font-weight: 700; color: #bae6fd;">Quick Staff Logins (1-Click Fill)</span>
             </div>
             <div className="demo-accounts-grid">
               {demoAccounts.map((acc) => (
