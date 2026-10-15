@@ -77,6 +77,12 @@ export default function App() {
 
   const handleLoginSuccess = (user, token) => {
     setCurrentUser(user);
+    const r = (user?.role || '').toLowerCase();
+    if (r === 'sudo') setActiveTab('admin');
+    else if (r === 'sales') setActiveTab('sales');
+    else if (r === 'store') setActiveTab('stock');
+    else if (r === 'accountant') setActiveTab('daybook');
+    else setActiveTab('daybook');
     refreshAll();
   };
 
@@ -100,7 +106,9 @@ export default function App() {
 
   const suppliers = contacts.filter(c => c.type === 'Supplier' || c.type === 'Both');
   const customers = contacts.filter(c => c.type === 'Customer' || c.type === 'Both');
-  const isAdmin = currentUser?.role?.toLowerCase().includes('admin');
+  const role = (currentUser?.role || '').toLowerCase();
+  const isSudo = role === 'sudo';
+  const isAdmin = isSudo || role.includes('admin');
 
   return (
     <div className="app-layout">
@@ -190,7 +198,7 @@ export default function App() {
         )}
 
         {/* Admin Panel (Admin Only: Dynamic Client Fields, Stock Manual & Backup) */}
-        {activeTab === 'admin' && isAdmin && (
+        {activeTab === 'admin' && (isAdmin || isSudo) && (
           <AdminPanelView 
             currentUser={currentUser}
             currency={currencySymbol}

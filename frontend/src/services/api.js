@@ -204,4 +204,14 @@ export const api = {
   createClientField: (data) => request('/admin/client-fields', { method: 'POST', body: JSON.stringify(data) }),
   updateClientField: (id, data) => request(`/admin/client-fields/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteClientField: (id) => request(`/admin/client-fields/${id}`, { method: 'DELETE' }),
+
+  // 12. Users & Roles Management (Sudo / Admin)
+  getUsers: () => request('/admin/users'),
+  createUser: (data) => request('/admin/users', { method: 'POST', body: JSON.stringify(data) }),
+  updateUser: (id, data) => request(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteUser: (id) => request(`/admin/users/${id}`, { method: 'DELETE' }),
+
+  // 13. Company & Site Details (Sudo / Admin)
+  getCompanySettings: () => request('/admin/company-settings'),
+  updateCompanySettings: (data) => request('/admin/company-settings', { method: 'PUT', body: JSON.stringify(data) }),
 };

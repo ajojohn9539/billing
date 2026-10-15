@@ -182,5 +182,82 @@ def test_documentation_pdf_download():
     assert res_backup_pdf.headers["content-type"] == "application/pdf"
     assert len(res_backup_pdf.content) > 100000
 
+
+# --- MODULE 8: SUDO USER & ROLES MANAGEMENT ---
+def test_sudo_and_user_roles_management():
+    # 1. Sudo login
+    res_sudo = client.post("/api/auth/login", json={
+        "username": "sudo",
+        "password": "SudoMaster2026!"
+    })
+    assert res_sudo.status_code == 200
+    sudo_user = res_sudo.json()["user"]
+    assert sudo_user["role"] == "sudo"
+
+    # 2. List all users
+    res_users = client.get("/api/admin/users")
+    assert res_users.status_code == 200
+    users = res_users.json()
+    assert len(users) >= 5
+    roles = [u["role"] for u in users]
+    assert "sudo" in roles
+    assert "admin" in roles
+    assert "sales" in roles
+
+    # 3. Create a test user with role
+    res_create = client.post("/api/admin/users", json={
+        "name": "Test Yard Supervisor",
+        "email": "supervisor@billora.com",
+        "password": "super123password",
+        "role": "store",
+        "status": "Active"
+    })
+    assert res_create.status_code == 200
+    created = res_create.json()
+    uid = created["id"]
+    assert created["role"] == "store"
+
+    # 4. Change user role to accountant
+    res_update = client.put(f"/api/admin/users/{uid}", json={
+        "role": "accountant"
+    })
+    assert res_update.status_code == 200
+    assert res_update.json()["role"] == "accountant"
+
+    # 5. Delete test user
+    res_del = client.delete(f"/api/admin/users/{uid}")
+    assert res_del.status_code == 200
+
+    # 6. Guard: Ensure sudo user cannot be deleted
+    res_del_sudo = client.delete("/api/admin/users/5")
+    assert res_del_sudo.status_code == 400
+
+# --- MODULE 9: CLIENT & SITE DETAILS (COMPANY SETTINGS) ---
+def test_company_site_settings_management():
+    # 1. Get settings
+    res = client.get("/api/admin/company-settings")
+    assert res.status_code == 200
+    data = res.json()
+    assert "BILLORA" in data["company_name"]
+    assert data["gstin"] == "32FGZPR5431L1ZL"
+
+    # 2. Update settings
+    res_up = client.put("/api/admin/company-settings", json={
+        "company_name": "BILLORA MARBLES & GRANITES",
+        "business_type": "Granite, Marble & Natural Stone ERP",
+        "tagline": "Smart GST Billing & Stone Inventory ERP System",
+        "phone": "9460110878, 8504882265",
+        "email": "admin@billora.com",
+        "address": "Chengamanadu, Kottarakkara, Kollam, Kerala - 691557",
+        "gstin": "32FGZPR5431L1ZL",
+        "invoice_prefix": "BIL26-27 ",
+        "purchase_prefix": "PUR-BIL-",
+        "currency_symbol": "₹",
+        "default_tax_rate": 18.0,
+        "payment_terms": "Net 30 Days"
+    })
+    assert res_up.status_code == 200
+    assert res_up.json()["company_name"] == "BILLORA MARBLES & GRANITES"
+
 if __name__ == "__main__":
     pytest.main(["-v", __file__])

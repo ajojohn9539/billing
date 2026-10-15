@@ -11,30 +11,44 @@ import {
   Download, 
   CheckCircle, 
   AlertCircle, 
-  HelpCircle,
-  Layers,
-  FileText,
-  Save,
-  RefreshCw,
-  Sliders
+  Layers, 
+  FileText, 
+  Save, 
+  RefreshCw, 
+  Sliders,
+  Crown,
+  KeyRound,
+  Building2,
+  Mail,
+  Phone,
+  MapPin,
+  CreditCard,
+  UserCheck,
+  UserX,
+  Lock
 } from 'lucide-react';
 import { api } from '../services/api';
 import BackupMigrationView from './BackupMigrationView';
 import Loader from './Loader';
 
 export default function AdminPanelView({ currentUser, currency, onRefresh }) {
-  const [activeSubTab, setActiveSubTab] = useState('client-fields');
-  const [fields, setFields] = useState([]);
+  const isSudo = currentUser?.role?.toLowerCase() === 'sudo';
+  const isAdmin = isSudo || currentUser?.role?.toLowerCase().includes('admin');
+
+  const [activeSubTab, setActiveSubTab] = useState(isSudo ? 'users-section' : 'client-fields');
+  
+  // Loading & message states
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // Field Modal State
+  // 1. Dynamic Client Fields State
+  const [fields, setFields] = useState([]);
   const [showFieldModal, setShowFieldModal] = useState(false);
-  const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
+  const [fieldModalMode, setFieldModalMode] = useState('add');
   const [selectedField, setSelectedField] = useState(null);
-  const [formData, setFormData] = useState({
+  const [fieldFormData, setFieldFormData] = useState({
     field_key: '',
     field_label: '',
     field_type: 'text',
@@ -46,31 +60,90 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
     sort_order: 1
   });
 
-  const isAdmin = currentUser?.role?.toLowerCase().includes('admin');
+  // 2. Users & Roles Management State
+  const [usersList, setUsersList] = useState([]);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [userModalMode, setUserModalMode] = useState('add'); // 'add' or 'edit'
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userFormData, setUserFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'sales',
+    status: 'Active'
+  });
+
+  // 3. Client & Site Details (Company Settings) State
+  const [companySettings, setCompanySettings] = useState({
+    company_name: '',
+    business_type: '',
+    tagline: '',
+    phone: '',
+    email: '',
+    address: '',
+    gstin: '',
+    invoice_prefix: 'BIL26-27 ',
+    purchase_prefix: 'PUR-BIL-',
+    currency_symbol: '₹',
+    default_tax_rate: 18.0,
+    payment_terms: 'Net 30 Days'
+  });
 
   useEffect(() => {
     if (isAdmin) {
       loadFields();
+      loadUsers();
+      loadCompanySettings();
     }
   }, [isAdmin]);
 
   const loadFields = async () => {
-    setLoading(true);
-    setError(null);
     try {
       const data = await api.getClientFields();
       setFields(data || []);
     } catch (err) {
-      setError(err.message || 'Failed to load dynamic client fields');
-    } finally {
-      setLoading(false);
+      console.warn('Error loading dynamic fields:', err);
     }
   };
 
-  const handleOpenAddModal = () => {
-    setModalMode('add');
+  const loadUsers = async () => {
+    try {
+      const data = await api.getUsers();
+      setUsersList(data || []);
+    } catch (err) {
+      console.warn('Error loading users:', err);
+    }
+  };
+
+  const loadCompanySettings = async () => {
+    try {
+      const data = await api.getCompanySettings();
+      if (data) {
+        setCompanySettings({
+          company_name: data.company_name || '',
+          business_type: data.business_type || '',
+          tagline: data.tagline || '',
+          phone: data.phone || '',
+          email: data.email || '',
+          address: data.address || '',
+          gstin: data.gstin || '',
+          invoice_prefix: data.invoice_prefix || 'BIL26-27 ',
+          purchase_prefix: data.purchase_prefix || 'PUR-BIL-',
+          currency_symbol: data.currency_symbol || '₹',
+          default_tax_rate: data.default_tax_rate !== undefined ? data.default_tax_rate : 18.0,
+          payment_terms: data.payment_terms || 'Net 30 Days'
+        });
+      }
+    } catch (err) {
+      console.warn('Error loading company settings:', err);
+    }
+  };
+
+  // --- CLIENT FIELDS HANDLERS ---
+  const handleOpenAddFieldModal = () => {
+    setFieldModalMode('add');
     setSelectedField(null);
-    setFormData({
+    setFieldFormData({
       field_key: '',
       field_label: '',
       field_type: 'text',
@@ -84,42 +157,38 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
     setShowFieldModal(true);
   };
 
-  const handleOpenEditModal = (field) => {
-    setModalMode('edit');
-    setSelectedField(field);
-    setFormData({
-      field_key: field.field_key,
-      field_label: field.field_label,
-      field_type: field.field_type,
-      options: field.options || '',
-      placeholder: field.placeholder || '',
-      default_value: field.default_value || '',
-      is_required: Boolean(field.is_required),
-      is_active: Boolean(field.is_active),
-      sort_order: field.sort_order || 1
+  const handleOpenEditFieldModal = (f) => {
+    setFieldModalMode('edit');
+    setSelectedField(f);
+    setFieldFormData({
+      field_key: f.field_key,
+      field_label: f.field_label,
+      field_type: f.field_type,
+      options: f.options || '',
+      placeholder: f.placeholder || '',
+      default_value: f.default_value || '',
+      is_required: Boolean(f.is_required),
+      is_active: Boolean(f.is_active),
+      sort_order: f.sort_order || 1
     });
     setShowFieldModal(true);
   };
 
   const handleSaveField = async (e) => {
     e.preventDefault();
-    if (!formData.field_label.trim()) {
+    if (!fieldFormData.field_label.trim()) {
       alert('Field Label is required');
       return;
     }
-
     setSaving(true);
     try {
-      if (modalMode === 'add') {
-        const key = formData.field_key.trim() || formData.field_label.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        await api.createClientField({
-          ...formData,
-          field_key: key
-        });
-        setSuccess(`Dynamic field "${formData.field_label}" created successfully!`);
+      if (fieldModalMode === 'add') {
+        const key = fieldFormData.field_key.trim() || fieldFormData.field_label.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        await api.createClientField({ ...fieldFormData, field_key: key });
+        setSuccess(`Dynamic field "${fieldFormData.field_label}" created successfully!`);
       } else {
-        await api.updateClientField(selectedField.id, formData);
-        setSuccess(`Dynamic field "${formData.field_label}" updated successfully!`);
+        await api.updateClientField(selectedField.id, fieldFormData);
+        setSuccess(`Dynamic field "${fieldFormData.field_label}" updated successfully!`);
       }
       setShowFieldModal(false);
       await loadFields();
@@ -141,15 +210,199 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
     }
   };
 
+  // --- USER & ROLES HANDLERS ---
+  const handleOpenAddUserModal = () => {
+    setUserModalMode('add');
+    setSelectedUser(null);
+    setUserFormData({
+      name: '',
+      email: '',
+      password: '',
+      role: 'sales',
+      status: 'Active'
+    });
+    setShowUserModal(true);
+  };
+
+  const handleOpenEditUserModal = (u) => {
+    setUserModalMode('edit');
+    setSelectedUser(u);
+    setUserFormData({
+      name: u.name,
+      email: u.email,
+      password: '', // leave empty unless changing
+      role: u.role,
+      status: u.status || 'Active'
+    });
+    setShowUserModal(true);
+  };
+
+  const handleSaveUser = async (e) => {
+    e.preventDefault();
+    if (!userFormData.name.trim() || !userFormData.email.trim()) {
+      alert('Name and Email / Username are required');
+      return;
+    }
+
+    if (userModalMode === 'add' && !userFormData.password.trim()) {
+      alert('Password is required when creating a new user');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      if (userModalMode === 'add') {
+        await api.createUser(userFormData);
+        setSuccess(`User "${userFormData.name}" with role "${userFormData.role}" created successfully!`);
+      } else {
+        const payload = {
+          name: userFormData.name,
+          email: userFormData.email,
+          role: userFormData.role,
+          status: userFormData.status
+        };
+        if (userFormData.password.trim()) {
+          payload.password = userFormData.password.trim();
+        }
+        await api.updateUser(selectedUser.id, payload);
+        setSuccess(`User "${userFormData.name}" updated with role "${userFormData.role}"!`);
+      }
+      setShowUserModal(false);
+      await loadUsers();
+    } catch (err) {
+      alert(err.message || 'Failed to save user');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteUser = async (id, name, role) => {
+    if (role === 'sudo' || id === 5) {
+      alert('Security Protection: The root Sudo user cannot be deleted.');
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to delete user "${name}" (${role})?`)) return;
+
+    try {
+      await api.deleteUser(id);
+      setSuccess(`User "${name}" deleted.`);
+      await loadUsers();
+    } catch (err) {
+      alert(err.message || 'Failed to delete user');
+    }
+  };
+
+  // --- COMPANY SETTINGS HANDLER ---
+  const handleSaveCompanySettings = async (e) => {
+    e.preventDefault();
+    if (!companySettings.company_name.trim()) {
+      alert('Company / Client Name is required.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await api.updateCompanySettings(companySettings);
+      setSuccess('Client Name & Company Site Details updated successfully!');
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      alert(err.message || 'Failed to update company settings');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getRoleBadge = (role) => {
+    const r = (role || '').toLowerCase();
+    if (r === 'sudo') {
+      return (
+        <span style={{ 
+          background: 'linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%)', 
+          color: '#fdf4ff', 
+          padding: '4px 10px', 
+          borderRadius: '12px', 
+          fontSize: '0.74rem', 
+          fontWeight: 800,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '4px',
+          boxShadow: '0 0 10px rgba(124, 58, 237, 0.4)'
+        }}>
+          <Crown size={12} /> SUDO ROOT
+        </span>
+      );
+    }
+    if (r === 'admin') {
+      return (
+        <span style={{ 
+          background: '#0284c7', 
+          color: '#ffffff', 
+          padding: '4px 10px', 
+          borderRadius: '12px', 
+          fontSize: '0.74rem', 
+          fontWeight: 700 
+        }}>
+          ADMIN
+        </span>
+      );
+    }
+    if (r === 'accountant') {
+      return (
+        <span style={{ 
+          background: '#059669', 
+          color: '#ffffff', 
+          padding: '4px 10px', 
+          borderRadius: '12px', 
+          fontSize: '0.74rem', 
+          fontWeight: 700 
+        }}>
+          ACCOUNTANT
+        </span>
+      );
+    }
+    if (r === 'sales') {
+      return (
+        <span style={{ 
+          background: '#0891b2', 
+          color: '#ffffff', 
+          padding: '4px 10px', 
+          borderRadius: '12px', 
+          fontSize: '0.74rem', 
+          fontWeight: 700 
+        }}>
+          SALES COUNTER
+        </span>
+      );
+    }
+    if (r === 'store') {
+      return (
+        <span style={{ 
+          background: '#d97706', 
+          color: '#ffffff', 
+          padding: '4px 10px', 
+          borderRadius: '12px', 
+          fontSize: '0.74rem', 
+          fontWeight: 700 
+        }}>
+          STORE YARD
+        </span>
+      );
+    }
+    return (
+      <span style={{ background: '#64748b', color: '#ffffff', padding: '3px 8px', borderRadius: '12px', fontSize: '0.72rem' }}>
+        {role}
+      </span>
+    );
+  };
+
   if (!isAdmin) {
     return (
       <div className="section-container" style={{ padding: '60px 20px', textAlign: 'center' }}>
         <div style={{ maxWidth: '480px', margin: '0 auto', background: '#fff', padding: '36px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.06)' }}>
           <AlertCircle size={48} color="#ef4444" style={{ marginBottom: '16px' }} />
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e293b', marginBottom: '8px' }}>Admin Access Required</h2>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1e293b', marginBottom: '8px' }}>Admin / Sudo Access Required</h2>
           <p style={{ color: '#64748b', fontSize: '0.92rem', lineHeight: 1.5 }}>
-            This module contains confidential administration settings, dynamic field configuration, and database controls. 
-            Please sign in with an Administrator account to continue.
+            This console is restricted to Administrator and Sudo root users. Please sign in with appropriate authority.
           </p>
         </div>
       </div>
@@ -163,24 +416,28 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ 
-              background: 'linear-gradient(135deg, #0284c7, #0369a1)', 
+              background: isSudo ? 'linear-gradient(135deg, #7c3aed, #4c1d95)' : 'linear-gradient(135deg, #0284c7, #0369a1)', 
               color: '#fff', 
-              padding: '6px 10px', 
+              padding: '6px 12px', 
               borderRadius: '8px', 
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
               fontSize: '0.8rem',
-              fontWeight: 700 
+              fontWeight: 800,
+              boxShadow: isSudo ? '0 0 14px rgba(124, 58, 237, 0.4)' : 'none'
             }}>
-              <ShieldCheck size={16} /> Admin Console
+              {isSudo ? <Crown size={15} /> : <ShieldCheck size={15} />}
+              {isSudo ? 'Sudo Root Console' : 'Administrator Console'}
             </span>
             <h1 style={{ fontSize: '1.6rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>
-              Billora Administration & Configuration
+              {isSudo ? 'Sudo Site Control & User Management' : 'Billora Administration & Configuration'}
             </h1>
           </div>
           <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '4px' }}>
-            Configure dynamic client attributes, access interactive stock guides, and manage automated database backups.
+            {isSudo 
+              ? 'Handle client enterprise name, customize site details, assign staff roles, and manage site access.'
+              : 'Configure dynamic client fields, access interactive stock manual, and monitor automated backups.'}
           </p>
         </div>
 
@@ -204,8 +461,39 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
         gap: '8px', 
         borderBottom: '2px solid #e2e8f0', 
         marginBottom: '24px',
-        paddingBottom: '2px'
+        paddingBottom: '2px',
+        overflowX: 'auto'
       }}>
+        {/* Sudo / Admin: Users & Roles */}
+        <button
+          className={`btn btn-sm ${activeSubTab === 'users-section' ? 'btn-primary' : 'btn-ghost'}`}
+          onClick={() => setActiveSubTab('users-section')}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '8px 8px 0 0', padding: '8px 16px' }}
+        >
+          <Users size={16} />
+          <span>Users & Set Roles</span>
+          <span style={{ 
+            background: activeSubTab === 'users-section' ? 'rgba(255,255,255,0.25)' : '#e2e8f0', 
+            padding: '2px 7px', 
+            borderRadius: '12px', 
+            fontSize: '0.72rem',
+            fontWeight: 700 
+          }}>
+            {usersList.length}
+          </span>
+        </button>
+
+        {/* Sudo / Admin: Client Name & Site Details */}
+        <button
+          className={`btn btn-sm ${activeSubTab === 'site-details' ? 'btn-primary' : 'btn-ghost'}`}
+          onClick={() => setActiveSubTab('site-details')}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', borderRadius: '8px 8px 0 0', padding: '8px 16px' }}
+        >
+          <Building2 size={16} />
+          <span>Client & Site Details</span>
+        </button>
+
+        {/* Dynamic Client Fields */}
         <button
           className={`btn btn-sm ${activeSubTab === 'client-fields' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setActiveSubTab('client-fields')}
@@ -224,6 +512,7 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
           </span>
         </button>
 
+        {/* Client Stock Manual */}
         <button
           className={`btn btn-sm ${activeSubTab === 'stock-guide' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setActiveSubTab('stock-guide')}
@@ -233,6 +522,7 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
           <span>Client Stock Manual</span>
         </button>
 
+        {/* Backup & Migration */}
         <button
           className={`btn btn-sm ${activeSubTab === 'backup-migration' ? 'btn-primary' : 'btn-ghost'}`}
           onClick={() => setActiveSubTab('backup-migration')}
@@ -264,7 +554,284 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
         </div>
       )}
 
-      {/* TAB 1: DYNAMIC CLIENT FIELDS */}
+      {/* TAB 1: USERS & ROLES MANAGEMENT */}
+      {activeSubTab === 'users-section' && (
+        <div className="card-box" style={{ background: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: '#1e293b' }}>
+                System Users & Site Role Assignment
+              </h3>
+              <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+                Control staff authorization, set roles (Sudo, Admin, Accountant, Sales Counter, Store Yard), and manage terminal passwords.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button className="btn btn-secondary btn-sm" onClick={loadUsers} disabled={loading}>
+                <RefreshCw size={14} className={loading ? 'spin-icon' : ''} />
+                <span>Refresh</span>
+              </button>
+              <button className="btn btn-primary btn-sm" onClick={handleOpenAddUserModal}>
+                <Plus size={14} />
+                <span>+ Add User & Set Role</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="table-responsive">
+            <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                  <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>User Profile</th>
+                  <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Username / Email</th>
+                  <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Assigned Role</th>
+                  <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Site Access Permissions</th>
+                  <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Status</th>
+                  <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569', textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usersList.map((u) => {
+                  const roleStr = (u.role || '').toLowerCase();
+                  let roleDesc = 'Operational staff';
+                  if (roleStr === 'sudo') roleDesc = 'Full Master Access: Company details, Roles, DB Backups, ERP Control';
+                  else if (roleStr === 'admin') roleDesc = 'Admin Console, Stock management, Invoicing, Dynamic Client Fields';
+                  else if (roleStr === 'accountant') roleDesc = 'Daybook, Payments, Customer Ledgers, Financial Reports';
+                  else if (roleStr === 'sales') roleDesc = 'GST Billing Counter, Customer Profiles, Quotes';
+                  else if (roleStr === 'store') roleDesc = 'Stone Yard Stock, Products, Damage Entries, Slabs Inventory';
+
+                  return (
+                    <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '50%',
+                            background: roleStr === 'sudo' ? 'linear-gradient(135deg, #7c3aed, #4c1d95)' : '#0284c7',
+                            color: '#fff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 700,
+                            fontSize: '0.88rem'
+                          }}>
+                            {u.name.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#0f172a' }}>{u.name}</div>
+                            {u.id === 5 && <span style={{ fontSize: '0.72rem', color: '#7c3aed', fontWeight: 700 }}>★ Root Sudo Authority</span>}
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '12px 14px', fontSize: '0.85rem', color: '#0284c7', fontFamily: 'monospace', fontWeight: 600 }}>
+                        {u.email}
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>
+                        {getRoleBadge(u.role)}
+                      </td>
+                      <td style={{ padding: '12px 14px', fontSize: '0.82rem', color: '#475569', maxWidth: '280px' }}>
+                        {roleDesc}
+                      </td>
+                      <td style={{ padding: '12px 14px', fontSize: '0.82rem' }}>
+                        {u.status === 'Active' || !u.status ? (
+                          <span style={{ color: '#16a34a', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <span className="live-dot" style={{ width: '6px', height: '6px' }}></span> Active
+                          </span>
+                        ) : (
+                          <span style={{ color: '#ef4444', fontWeight: 600 }}>Suspended</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: '6px' }}>
+                          <button 
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => handleOpenEditUserModal(u)}
+                            title="Edit User & Set Role"
+                            style={{ padding: '4px 10px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <Edit3 size={13} />
+                            <span>Set Role</span>
+                          </button>
+                          {u.role !== 'sudo' && u.id !== 5 && (
+                            <button 
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => handleDeleteUser(u.id, u.name, u.role)}
+                              title="Delete User"
+                              style={{ padding: '4px 8px' }}
+                            >
+                              <Trash2 size={14} color="#ef4444" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: CLIENT & SITE DETAILS (COMPANY SETTINGS) */}
+      {activeSubTab === 'site-details' && (
+        <div className="card-box" style={{ background: '#fff', borderRadius: '12px', padding: '28px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+          <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '16px', marginBottom: '24px' }}>
+            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
+              Client Name & Company Site Configuration
+            </h3>
+            <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '0.88rem' }}>
+              Handled by Sudo user to customize client enterprise name, GSTIN, yard site address, invoice prefixes, and branding across the entire software.
+            </p>
+          </div>
+
+          <form onSubmit={handleSaveCompanySettings}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 700, color: '#1e293b' }}>Client Enterprise Name *</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  style={{ fontSize: '0.95rem', fontWeight: 600 }}
+                  value={companySettings.company_name}
+                  onChange={(e) => setCompanySettings({ ...companySettings, company_name: e.target.value })}
+                  placeholder="e.g. BILLORA MARBLES & GRANITES"
+                  required
+                />
+                <span style={{ fontSize: '0.74rem', color: '#64748b' }}>Displayed in main navbar, headers, printed GST invoices, and vouchers.</span>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 700, color: '#1e293b' }}>Business Category / Sector</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={companySettings.business_type}
+                  onChange={(e) => setCompanySettings({ ...companySettings, business_type: e.target.value })}
+                  placeholder="e.g. Granite, Marble & Natural Stone ERP"
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginBottom: '20px' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 700, color: '#1e293b' }}>Tagline / Enterprise Slogan</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={companySettings.tagline}
+                  onChange={(e) => setCompanySettings({ ...companySettings, tagline: e.target.value })}
+                  placeholder="e.g. Smart GST Billing & Stone Inventory ERP System"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 700, color: '#1e293b' }}>GSTIN Registration *</label>
+                <input
+                  type="text"
+                  className="form-input font-mono"
+                  style={{ fontWeight: 700, color: '#0284c7' }}
+                  value={companySettings.gstin}
+                  onChange={(e) => setCompanySettings({ ...companySettings, gstin: e.target.value })}
+                  placeholder="e.g. 32FGZPR5431L1ZL"
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 700, color: '#1e293b' }}>Official Phone / Mobiles</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={companySettings.phone}
+                  onChange={(e) => setCompanySettings({ ...companySettings, phone: e.target.value })}
+                  placeholder="e.g. 9460110878, 8504882265"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 700, color: '#1e293b' }}>Official Email Address</label>
+                <input
+                  type="email"
+                  className="form-input"
+                  value={companySettings.email}
+                  onChange={(e) => setCompanySettings({ ...companySettings, email: e.target.value })}
+                  placeholder="e.g. admin@billora.com"
+                />
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '20px' }}>
+              <label className="form-label" style={{ fontWeight: 700, color: '#1e293b' }}>Stone Yard Site / Physical Address</label>
+              <input
+                type="text"
+                className="form-input"
+                value={companySettings.address}
+                onChange={(e) => setCompanySettings({ ...companySettings, address: e.target.value })}
+                placeholder="e.g. Chengamanadu, Kottarakkara, Kollam, Kerala - 691557"
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Sales Invoice Prefix</label>
+                <input
+                  type="text"
+                  className="form-input font-mono"
+                  value={companySettings.invoice_prefix}
+                  onChange={(e) => setCompanySettings({ ...companySettings, invoice_prefix: e.target.value })}
+                  placeholder="e.g. BIL26-27 "
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Purchase Prefix</label>
+                <input
+                  type="text"
+                  className="form-input font-mono"
+                  value={companySettings.purchase_prefix}
+                  onChange={(e) => setCompanySettings({ ...companySettings, purchase_prefix: e.target.value })}
+                  placeholder="e.g. PUR-BIL-"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Default GST Tax Rate (%)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  className="form-input"
+                  value={companySettings.default_tax_rate}
+                  onChange={(e) => setCompanySettings({ ...companySettings, default_tax_rate: parseFloat(e.target.value) || 18.0 })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Currency Symbol</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={companySettings.currency_symbol}
+                  onChange={(e) => setCompanySettings({ ...companySettings, currency_symbol: e.target.value })}
+                  placeholder="e.g. ₹"
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button type="submit" className="btn btn-primary" disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                <Save size={16} />
+                <span>{saving ? 'Updating Client Details...' : 'Save Client & Site Details'}</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* TAB 3: DYNAMIC CLIENT FIELDS */}
       {activeSubTab === 'client-fields' && (
         <div className="card-box" style={{ background: '#fff', borderRadius: '12px', padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -282,105 +849,96 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
                 <RefreshCw size={14} className={loading ? 'spin-icon' : ''} />
                 <span>Refresh</span>
               </button>
-              <button className="btn btn-primary btn-sm" onClick={handleOpenAddModal}>
+              <button className="btn btn-primary btn-sm" onClick={handleOpenAddFieldModal}>
                 <Plus size={14} />
                 <span>+ Add Dynamic Field</span>
               </button>
             </div>
           </div>
 
-          {loading ? (
-            <Loader message="Loading dynamic client attributes..." />
-          ) : fields.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
-              <Sliders size={36} style={{ marginBottom: '10px', opacity: 0.5 }} />
-              <p>No dynamic client fields defined yet. Click '+ Add Dynamic Field' to create one.</p>
-            </div>
-          ) : (
-            <div className="table-responsive">
-              <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
-                    <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Order</th>
-                    <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Field Label</th>
-                    <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Key (Slug)</th>
-                    <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Type</th>
-                    <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Options / Placeholder</th>
-                    <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Required</th>
-                    <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Status</th>
-                    <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569', textAlign: 'right' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fields.map((f, idx) => (
-                    <tr key={f.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '12px 14px', fontSize: '0.85rem', color: '#64748b' }}>{f.sort_order || idx + 1}</td>
-                      <td style={{ padding: '12px 14px', fontSize: '0.9rem', fontWeight: 600, color: '#0f172a' }}>
-                        {f.field_label}
-                      </td>
-                      <td style={{ padding: '12px 14px', fontSize: '0.82rem', fontFamily: 'monospace', color: '#0284c7' }}>
-                        {f.field_key}
-                      </td>
-                      <td style={{ padding: '12px 14px', fontSize: '0.82rem' }}>
-                        <span style={{ 
-                          background: '#f1f5f9', 
-                          padding: '3px 8px', 
-                          borderRadius: '6px', 
-                          fontWeight: 600,
-                          color: '#334155'
-                        }}>
-                          {f.field_type}
+          <div className="table-responsive">
+            <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                  <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Order</th>
+                  <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Field Label</th>
+                  <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Key (Slug)</th>
+                  <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Type</th>
+                  <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Options / Placeholder</th>
+                  <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Required</th>
+                  <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569' }}>Status</th>
+                  <th style={{ padding: '10px 14px', fontSize: '0.8rem', color: '#475569', textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fields.map((f, idx) => (
+                  <tr key={f.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '12px 14px', fontSize: '0.85rem', color: '#64748b' }}>{f.sort_order || idx + 1}</td>
+                    <td style={{ padding: '12px 14px', fontSize: '0.9rem', fontWeight: 600, color: '#0f172a' }}>
+                      {f.field_label}
+                    </td>
+                    <td style={{ padding: '12px 14px', fontSize: '0.82rem', fontFamily: 'monospace', color: '#0284c7' }}>
+                      {f.field_key}
+                    </td>
+                    <td style={{ padding: '12px 14px', fontSize: '0.82rem' }}>
+                      <span style={{ 
+                        background: '#f1f5f9', 
+                        padding: '3px 8px', 
+                        borderRadius: '6px', 
+                        fontWeight: 600,
+                        color: '#334155'
+                      }}>
+                        {f.field_type}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 14px', fontSize: '0.82rem', color: '#64748b', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {f.options ? `Opts: ${f.options}` : (f.placeholder || '—')}
+                    </td>
+                    <td style={{ padding: '12px 14px', fontSize: '0.82rem' }}>
+                      {f.is_required ? (
+                        <span style={{ color: '#ef4444', fontWeight: 600 }}>Yes</span>
+                      ) : (
+                        <span style={{ color: '#94a3b8' }}>Optional</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '12px 14px', fontSize: '0.82rem' }}>
+                      {f.is_active ? (
+                        <span style={{ color: '#16a34a', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <span className="live-dot" style={{ width: '6px', height: '6px' }}></span> Active
                         </span>
-                      </td>
-                      <td style={{ padding: '12px 14px', fontSize: '0.82rem', color: '#64748b', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {f.options ? `Opts: ${f.options}` : (f.placeholder || '—')}
-                      </td>
-                      <td style={{ padding: '12px 14px', fontSize: '0.82rem' }}>
-                        {f.is_required ? (
-                          <span style={{ color: '#ef4444', fontWeight: 600 }}>Yes</span>
-                        ) : (
-                          <span style={{ color: '#94a3b8' }}>Optional</span>
-                        )}
-                      </td>
-                      <td style={{ padding: '12px 14px', fontSize: '0.82rem' }}>
-                        {f.is_active ? (
-                          <span style={{ color: '#16a34a', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <span className="live-dot" style={{ width: '6px', height: '6px' }}></span> Active
-                          </span>
-                        ) : (
-                          <span style={{ color: '#94a3b8' }}>Disabled</span>
-                        )}
-                      </td>
-                      <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: '6px' }}>
-                          <button 
-                            className="btn btn-ghost btn-sm"
-                            onClick={() => handleOpenEditModal(f)}
-                            title="Edit dynamic field"
-                            style={{ padding: '4px 8px' }}
-                          >
-                            <Edit3 size={14} color="#0284c7" />
-                          </button>
-                          <button 
-                            className="btn btn-ghost btn-sm"
-                            onClick={() => handleDeleteField(f.id, f.field_label)}
-                            title="Delete dynamic field"
-                            style={{ padding: '4px 8px' }}
-                          >
-                            <Trash2 size={14} color="#ef4444" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                      ) : (
+                        <span style={{ color: '#94a3b8' }}>Disabled</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', gap: '6px' }}>
+                        <button 
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => handleOpenEditFieldModal(f)}
+                          title="Edit dynamic field"
+                          style={{ padding: '4px 8px' }}
+                        >
+                          <Edit3 size={14} color="#0284c7" />
+                        </button>
+                        <button 
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => handleDeleteField(f.id, f.field_label)}
+                          title="Delete dynamic field"
+                          style={{ padding: '4px 8px' }}
+                        >
+                          <Trash2 size={14} color="#ef4444" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {/* TAB 2: CLIENT STOCK & OPERATIONS MANUAL */}
+      {/* TAB 4: CLIENT STOCK & OPERATIONS MANUAL */}
       {activeSubTab === 'stock-guide' && (
         <div className="card-box" style={{ background: '#fff', borderRadius: '12px', padding: '28px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px', marginBottom: '20px' }}>
@@ -405,7 +963,7 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '28px' }}>
-            {/* Guide Card 1: Adding Purchasers */}
+            {/* Guide Card 1 */}
             <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', background: '#f8fafc' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                 <span style={{ background: '#0284c7', color: '#fff', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem' }}>1</span>
@@ -425,7 +983,7 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
               </ol>
             </div>
 
-            {/* Guide Card 2: Adding General Items */}
+            {/* Guide Card 2 */}
             <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', background: '#f8fafc' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                 <span style={{ background: '#0284c7', color: '#fff', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem' }}>2</span>
@@ -446,7 +1004,7 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
               </ol>
             </div>
 
-            {/* Guide Card 3: Adding Stone Items */}
+            {/* Guide Card 3 */}
             <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', background: '#f8fafc' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                 <span style={{ background: '#0284c7', color: '#fff', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem' }}>3</span>
@@ -467,26 +1025,151 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
               </ol>
             </div>
           </div>
-
-          {/* Slab Measurement Formula Banner */}
-          <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '10px', padding: '16px 20px', display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <Layers size={32} color="#0284c7" />
-            <div>
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0369a1', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Stone Yard Measurement Standard Formula
-              </span>
-              <p style={{ margin: '4px 0 0 0', fontSize: '0.88rem', color: '#0f172a', fontFamily: 'monospace' }}>
-                Sq.Ft per Slab = (Length in inches × Height in inches) ÷ 144 | Total Billable Sq.Ft = Sq.Ft per Slab × Slabs Count
-              </p>
-            </div>
-          </div>
         </div>
       )}
 
-      {/* TAB 3: BACKUP & DATA MIGRATION ENGINE */}
+      {/* TAB 5: BACKUP & DATA MIGRATION ENGINE */}
       {activeSubTab === 'backup-migration' && (
         <div>
           <BackupMigrationView currency={currency} onRefresh={onRefresh} />
+        </div>
+      )}
+
+      {/* MODAL: ADD / EDIT USER & SET ROLE */}
+      {showUserModal && (
+        <div className="modal-backdrop" style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div className="modal-card" style={{
+            background: '#fff',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '520px',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            overflow: 'hidden'
+          }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <KeyRound size={20} color="#0284c7" />
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
+                  {userModalMode === 'add' ? 'Create User & Assign Site Role' : `Edit User & Set Role: ${selectedUser?.name}`}
+                </h3>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setShowUserModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.4rem', color: '#64748b', cursor: 'pointer' }}
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveUser} style={{ padding: '24px' }}>
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label className="form-label" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. Thomas Kovoor"
+                  value={userFormData.name}
+                  onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label className="form-label" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                  Username / Email Address *
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="e.g. thomas@billora.com or thomas"
+                  value={userFormData.email}
+                  onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label className="form-label" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                  Password {userModalMode === 'edit' && <span style={{ color: '#94a3b8' }}>(Leave blank to keep current)</span>}
+                </label>
+                <input
+                  type="password"
+                  className="form-input"
+                  placeholder={userModalMode === 'add' ? 'Set account password' : 'Enter new password if changing'}
+                  value={userFormData.password}
+                  onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
+                  required={userModalMode === 'add'}
+                />
+              </div>
+
+              {/* ROLE SELECTOR */}
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#0369a1', marginBottom: '6px' }}>
+                  Assign Site Access Role *
+                </label>
+                <select
+                  className="form-input"
+                  style={{ fontWeight: 600, fontSize: '0.9rem' }}
+                  value={userFormData.role}
+                  onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value })}
+                >
+                  <option value="sales">Sales Counter Staff (Billing, Customers, Quotes)</option>
+                  <option value="accountant">Accountant (Daybook, Ledger, Payments, Dues)</option>
+                  <option value="store">Store Yard Keeper (Stock, Damage Entry, Slab Inventory)</option>
+                  <option value="admin">Administrator (Operations, Dynamic Fields, Reports)</option>
+                  <option value="sudo">Sudo Master (Full Site Control, Client Details & Roles)</option>
+                </select>
+                <span style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '4px', display: 'block' }}>
+                  The assigned role immediately controls which navigation tabs and capabilities this user has on the site.
+                </span>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label className="form-label" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                  Account Status
+                </label>
+                <select
+                  className="form-input"
+                  value={userFormData.status}
+                  onChange={(e) => setUserFormData({ ...userFormData, status: e.target.value })}
+                >
+                  <option value="Active">Active (Permitted to sign in)</option>
+                  <option value="Suspended">Suspended (Login blocked)</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowUserModal(false)}
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary"
+                  disabled={saving}
+                >
+                  {saving ? 'Saving...' : (userModalMode === 'add' ? 'Create User' : 'Update Role & Profile')}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -513,7 +1196,7 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
           }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
-                {modalMode === 'add' ? 'Add Dynamic Client Field' : 'Edit Dynamic Client Field'}
+                {fieldModalMode === 'add' ? 'Add Dynamic Client Field' : 'Edit Dynamic Client Field'}
               </h3>
               <button 
                 type="button" 
@@ -533,13 +1216,13 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
                   type="text"
                   className="form-input"
                   placeholder="e.g. Site Delivery Route / Landmark"
-                  value={formData.field_label}
-                  onChange={(e) => setFormData({ ...formData, field_label: e.target.value })}
+                  value={fieldFormData.field_label}
+                  onChange={(e) => setFieldFormData({ ...fieldFormData, field_label: e.target.value })}
                   required
                 />
               </div>
 
-              {modalMode === 'add' && (
+              {fieldModalMode === 'add' && (
                 <div className="form-group" style={{ marginBottom: '14px' }}>
                   <label className="form-label" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
                     Field Key (Slug)
@@ -548,8 +1231,8 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
                     type="text"
                     className="form-input"
                     placeholder="e.g. site_route (auto-generated if blank)"
-                    value={formData.field_key}
-                    onChange={(e) => setFormData({ ...formData, field_key: e.target.value })}
+                    value={fieldFormData.field_key}
+                    onChange={(e) => setFieldFormData({ ...fieldFormData, field_key: e.target.value })}
                   />
                 </div>
               )}
@@ -561,8 +1244,8 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
                   </label>
                   <select
                     className="form-input"
-                    value={formData.field_type}
-                    onChange={(e) => setFormData({ ...formData, field_type: e.target.value })}
+                    value={fieldFormData.field_type}
+                    onChange={(e) => setFieldFormData({ ...fieldFormData, field_type: e.target.value })}
                   >
                     <option value="text">Text Input</option>
                     <option value="number">Numeric</option>
@@ -579,14 +1262,14 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
                   <input
                     type="number"
                     className="form-input"
-                    value={formData.sort_order}
-                    onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) || 1 })}
+                    value={fieldFormData.sort_order}
+                    onChange={(e) => setFieldFormData({ ...fieldFormData, sort_order: parseInt(e.target.value) || 1 })}
                     min="1"
                   />
                 </div>
               </div>
 
-              {formData.field_type === 'select' && (
+              {fieldFormData.field_type === 'select' && (
                 <div className="form-group" style={{ marginBottom: '14px' }}>
                   <label className="form-label" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
                     Dropdown Options (comma-separated)
@@ -595,8 +1278,8 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
                     type="text"
                     className="form-input"
                     placeholder="e.g. Premium Galaxy,Italian Marble,Standard Granite"
-                    value={formData.options}
-                    onChange={(e) => setFormData({ ...formData, options: e.target.value })}
+                    value={fieldFormData.options}
+                    onChange={(e) => setFieldFormData({ ...fieldFormData, options: e.target.value })}
                   />
                 </div>
               )}
@@ -609,8 +1292,8 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
                   type="text"
                   className="form-input"
                   placeholder="e.g. Near St. Mary Church, Main Road"
-                  value={formData.placeholder}
-                  onChange={(e) => setFormData({ ...formData, placeholder: e.target.value })}
+                  value={fieldFormData.placeholder}
+                  onChange={(e) => setFieldFormData({ ...fieldFormData, placeholder: e.target.value })}
                 />
               </div>
 
@@ -618,8 +1301,8 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.88rem', color: '#334155' }}>
                   <input
                     type="checkbox"
-                    checked={formData.is_required}
-                    onChange={(e) => setFormData({ ...formData, is_required: e.target.checked })}
+                    checked={fieldFormData.is_required}
+                    onChange={(e) => setFieldFormData({ ...fieldFormData, is_required: e.target.checked })}
                   />
                   <span>Mandatory / Required Field</span>
                 </label>
@@ -627,8 +1310,8 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.88rem', color: '#334155' }}>
                   <input
                     type="checkbox"
-                    checked={formData.is_active}
-                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                    checked={fieldFormData.is_active}
+                    onChange={(e) => setFieldFormData({ ...fieldFormData, is_active: e.target.checked })}
                   />
                   <span>Active in Client Forms</span>
                 </label>
@@ -648,7 +1331,7 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
                   className="btn btn-primary"
                   disabled={saving}
                 >
-                  {saving ? 'Saving Field...' : (modalMode === 'add' ? 'Create Field' : 'Update Field')}
+                  {saving ? 'Saving Field...' : (fieldModalMode === 'add' ? 'Create Field' : 'Update Field')}
                 </button>
               </div>
             </form>

@@ -10,7 +10,8 @@ import {
   MoreHorizontal,
   Plus,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  Crown
 } from 'lucide-react';
 
 export default function Navbar({ 
@@ -23,23 +24,71 @@ export default function Navbar({
   currentUser,
   onLogout
 }) {
-  const isAdmin = currentUser?.role?.toLowerCase().includes('admin');
+  const role = (currentUser?.role || '').toLowerCase();
+  const isSudo = role === 'sudo';
+  const isAdmin = isSudo || role.includes('admin');
+  const isAccountant = role === 'accountant';
+  const isSales = role === 'sales';
+  const isStore = role === 'store';
 
-  // Base operational tabs for staff
-  const baseTabs = [
-    { id: 'daybook', label: 'Daybook', icon: BookOpen },
-    { id: 'sales', label: 'Sales', icon: FileText },
-    { id: 'purchase', label: 'Purchase', icon: ShoppingBag },
-    { id: 'products', label: 'Products', icon: Package },
-    { id: 'stock', label: 'Stock', icon: Layers },
-    { id: 'damage', label: 'Damage Entry', icon: AlertTriangle },
-    { id: 'contacts', label: 'Contacts', icon: Users },
-  ];
-
-  // Admin-only modules are placed strictly in the Admin Panel
-  const tabs = isAdmin 
-    ? [...baseTabs, { id: 'admin', label: 'Admin Panel', icon: ShieldCheck }, { id: 'others', label: 'Others', icon: MoreHorizontal }]
-    : [...baseTabs, { id: 'others', label: 'Others', icon: MoreHorizontal }];
+  let tabs = [];
+  if (isSudo) {
+    tabs = [
+      { id: 'admin', label: 'Sudo Console', icon: Crown },
+      { id: 'daybook', label: 'Daybook', icon: BookOpen },
+      { id: 'sales', label: 'Sales', icon: FileText },
+      { id: 'purchase', label: 'Purchase', icon: ShoppingBag },
+      { id: 'products', label: 'Products', icon: Package },
+      { id: 'stock', label: 'Stock', icon: Layers },
+      { id: 'damage', label: 'Damage Entry', icon: AlertTriangle },
+      { id: 'contacts', label: 'Contacts', icon: Users },
+      { id: 'others', label: 'Others', icon: MoreHorizontal },
+    ];
+  } else if (isAdmin) {
+    tabs = [
+      { id: 'admin', label: 'Admin Panel', icon: ShieldCheck },
+      { id: 'daybook', label: 'Daybook', icon: BookOpen },
+      { id: 'sales', label: 'Sales', icon: FileText },
+      { id: 'purchase', label: 'Purchase', icon: ShoppingBag },
+      { id: 'products', label: 'Products', icon: Package },
+      { id: 'stock', label: 'Stock', icon: Layers },
+      { id: 'damage', label: 'Damage Entry', icon: AlertTriangle },
+      { id: 'contacts', label: 'Contacts', icon: Users },
+      { id: 'others', label: 'Others', icon: MoreHorizontal },
+    ];
+  } else if (isAccountant) {
+    tabs = [
+      { id: 'daybook', label: 'Daybook', icon: BookOpen },
+      { id: 'sales', label: 'Sales Invoices', icon: FileText },
+      { id: 'contacts', label: 'Client Accounts', icon: Users },
+      { id: 'others', label: 'Financial Reports', icon: MoreHorizontal },
+    ];
+  } else if (isSales) {
+    tabs = [
+      { id: 'sales', label: 'Sales Counter', icon: FileText },
+      { id: 'contacts', label: 'Customer Directory', icon: Users },
+      { id: 'products', label: 'Product Catalog', icon: Package },
+      { id: 'stock', label: 'Current Stock', icon: Layers },
+    ];
+  } else if (isStore) {
+    tabs = [
+      { id: 'stock', label: 'Yard Stock', icon: Layers },
+      { id: 'products', label: 'Products & Slabs', icon: Package },
+      { id: 'damage', label: 'Damage Entry', icon: AlertTriangle },
+      { id: 'purchase', label: 'Purchase Inward', icon: ShoppingBag },
+    ];
+  } else {
+    tabs = [
+      { id: 'daybook', label: 'Daybook', icon: BookOpen },
+      { id: 'sales', label: 'Sales', icon: FileText },
+      { id: 'purchase', label: 'Purchase', icon: ShoppingBag },
+      { id: 'products', label: 'Products', icon: Package },
+      { id: 'stock', label: 'Stock', icon: Layers },
+      { id: 'damage', label: 'Damage Entry', icon: AlertTriangle },
+      { id: 'contacts', label: 'Contacts', icon: Users },
+      { id: 'others', label: 'Others', icon: MoreHorizontal },
+    ];
+  }
 
   const getInitials = (name) => {
     if (!name) return 'U';
@@ -60,8 +109,8 @@ export default function Navbar({
             height: '42px', 
             borderRadius: '50%', 
             objectFit: 'cover',
-            border: '2px solid rgba(255, 255, 255, 0.4)',
-            boxShadow: '0 0 12px rgba(2, 132, 199, 0.45)'
+            border: isSudo ? '2px solid #a855f7' : '2px solid rgba(255, 255, 255, 0.4)',
+            boxShadow: isSudo ? '0 0 14px rgba(168, 85, 247, 0.5)' : '0 0 12px rgba(2, 132, 199, 0.45)'
           }} 
         />
         <div className="brand-info">
@@ -76,7 +125,7 @@ export default function Navbar({
           return (
             <button
               key={tab.id}
-              className={`nav-tab-btn ${activeTab === tab.id ? 'active' : ''} ${tab.id === 'admin' ? 'nav-tab-admin' : ''}`}
+              className={`nav-tab-btn ${activeTab === tab.id ? 'active' : ''} ${tab.id === 'admin' ? (isSudo ? 'nav-tab-sudo' : 'nav-tab-admin') : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
               <Icon size={16} />
@@ -87,24 +136,39 @@ export default function Navbar({
       </nav>
 
       <div className="header-actions">
-        <button className="btn btn-secondary btn-sm" onClick={onQuickPurchase}>
-          <ShoppingBag size={14} />
-          <span>+ Purchase</span>
-        </button>
-        <button className="btn btn-primary btn-sm" onClick={onQuickSale}>
-          <Plus size={14} />
-          <span>+ New Sale</span>
-        </button>
+        {/* Only sales/admin/sudo can create quick sale */}
+        {(isSudo || isAdmin || isSales) && (
+          <button className="btn btn-primary btn-sm" onClick={onQuickSale}>
+            <Plus size={14} />
+            <span>+ New Sale</span>
+          </button>
+        )}
+
+        {/* Only store/admin/sudo can create quick purchase */}
+        {(isSudo || isAdmin || isStore) && (
+          <button className="btn btn-secondary btn-sm" onClick={onQuickPurchase}>
+            <ShoppingBag size={14} />
+            <span>+ Purchase</span>
+          </button>
+        )}
 
         {currentUser && (
           <div className="user-profile-bar">
             <div className="user-profile-badge" title={`${currentUser.name} (${currentUser.role})`}>
-              <div className="user-avatar-circle">
-                {getInitials(currentUser.name)}
+              <div className="user-avatar-circle" style={{
+                background: isSudo ? 'linear-gradient(135deg, #7c3aed, #4c1d95)' : undefined
+              }}>
+                {isSudo ? <Crown size={14} /> : getInitials(currentUser.name)}
               </div>
               <div className="user-details-text">
                 <span className="user-name-display">{currentUser.name.split('(')[0].trim()}</span>
-                <span className="user-role-tag">{currentUser.role}</span>
+                <span className="user-role-tag" style={{
+                  background: isSudo ? 'linear-gradient(135deg, #7c3aed, #4c1d95)' : undefined,
+                  color: isSudo ? '#ffffff' : undefined,
+                  fontWeight: isSudo ? 800 : undefined
+                }}>
+                  {currentUser.role.toUpperCase()}
+                </span>
               </div>
             </div>
 

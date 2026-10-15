@@ -1952,3 +1952,23 @@ body {
   align-items: center;
   justify-content: center;
 }
+
+/* Sudo Console Nav Tab Accent */
+.nav-tab-sudo {
+  background: rgba(124, 58, 237, 0.15) !important;
+  color: #c084fc !important;
+  border-color: rgba(168, 85, 247, 0.4) !important;
+}
+
+.nav-tab-sudo:hover {
+  background: rgba(124, 58, 237, 0.25) !important;
+  color: #f3e8ff !important;
+  box-shadow: 0 0 12px rgba(124, 58, 237, 0.35);
+}
+
+.nav-tab-sudo.active {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+  color: #ffffff !important;
+  border-color: #a855f7 !important;
+  box-shadow: 0 0 16px rgba(124, 58, 237, 0.5) !important;
+}
