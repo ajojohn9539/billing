@@ -81,6 +81,24 @@ def health_check():
         "version": "1.0.0"
     }
 
+
+# Static files & SPA fallback (serves frontend if built)
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+DIST_DIR = BASE_DIR.parent / "frontend" / "dist"
+if DIST_DIR.exists() and (DIST_DIR / "index.html").exists():
+    app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        if full_path.startswith("api/"):
+            return None
+        file_path = DIST_DIR / full_path
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(DIST_DIR / "index.html")
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8100))
