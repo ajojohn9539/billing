@@ -435,7 +435,7 @@ export default function SalesView({ sales, customers, products, currency = '₹'
         <div className="modal-overlay">
           <div className="modal-container modal-lg">
             <div className="modal-header">
-              <h3>Create GST Tax Invoice — JR Marbles & Granites (Chengamanadu)</h3>
+              <h3>Create GST Tax Invoice — Billora Marbles & Granites (Chengamanadu)</h3>
               <button className="modal-close-btn" onClick={() => setModalOpen(false)}><X size={20} /></button>
             </div>
 
@@ -791,7 +791,7 @@ export default function SalesView({ sales, customers, products, currency = '₹'
                       style={{ width: '54px', height: '54px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #0284c7' }} 
                     />
                     <div className="jr-bill-brand-titles">
-                      <h1 className="jr-bill-main-title">JR MARBLES & GRANITES</h1>
+                      <h1 className="jr-bill-main-title">BILLORA MARBLES & GRANITES</h1>
                       <div className="jr-bill-sub-title">CHENGAMANADU</div>
                     </div>
                   </div>
@@ -1051,7 +1051,7 @@ export default function SalesView({ sales, customers, products, currency = '₹'
                         Certified that the particulars given above are true and correct
                       </div>
                       <div className="sign-for">
-                        For <strong>JR MARBLES & GRANITES</strong>
+                        For <strong>BILLORA MARBLES & GRANITES</strong>
                       </div>
                       <div className="sign-space">
                         <span className="sign-pen-mock">Approved</span>

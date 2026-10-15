@@ -1,3 +1,5 @@
+import json
+from typing import Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, Query
 from database import query_all, query_one, execute_insert, execute_update
 from pydantic import BaseModel
@@ -20,6 +22,7 @@ class ContactCreate(BaseModel):
     credit_limit: float = 0.0
     notes: Optional[str] = ""
     status: str = "Active"
+    custom_fields: Optional[Dict[str, Any]] = None
 
 class ContactUpdate(ContactCreate):
     pass
@@ -91,16 +94,18 @@ def get_contact_ledger(contact_id: int):
 
 @router.post("")
 def create_contact(payload: ContactCreate):
+    c_fields_json = json.dumps(payload.custom_fields or {})
     sql = """
         INSERT INTO contacts (type, name, company, phone, email, address, city, state, gstin,
-                             opening_balance, balance_type, current_balance, credit_limit, notes, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                             opening_balance, balance_type, current_balance, credit_limit, notes, status, custom_fields)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::jsonb)
     """
     new_id = execute_insert(sql, (
         payload.type, payload.name.strip(), payload.company or "", payload.phone or "",
         payload.email or "", payload.address or "", payload.city or "", payload.state or "",
         payload.gstin or "", payload.opening_balance, payload.balance_type,
-        payload.opening_balance, payload.credit_limit, payload.notes or "", payload.status
+        payload.opening_balance, payload.credit_limit, payload.notes or "", payload.status,
+        c_fields_json
     ))
     return get_contact(new_id)
 
@@ -110,18 +115,19 @@ def update_contact(contact_id: int, payload: ContactUpdate):
     if not exists:
         raise HTTPException(status_code=404, detail="Contact not found")
 
+    c_fields_json = json.dumps(payload.custom_fields or exists.get("custom_fields") or {})
     sql = """
         UPDATE contacts SET
             type = ?, name = ?, company = ?, phone = ?, email = ?,
             address = ?, city = ?, state = ?, gstin = ?,
-            credit_limit = ?, notes = ?, status = ?
+            credit_limit = ?, notes = ?, status = ?, custom_fields = ?::jsonb
         WHERE id = ?
     """
     execute_update(sql, (
         payload.type, payload.name.strip(), payload.company or "", payload.phone or "",
         payload.email or "", payload.address or "", payload.city or "", payload.state or "",
         payload.gstin or "", payload.credit_limit, payload.notes or "", payload.status,
-        contact_id
+        c_fields_json, contact_id
     ))
     return get_contact(contact_id)
 

@@ -10,8 +10,7 @@ import {
   MoreHorizontal,
   Plus,
   LogOut,
-  UserCheck,
-  Database
+  ShieldCheck
 } from 'lucide-react';
 
 export default function Navbar({ 
@@ -24,7 +23,10 @@ export default function Navbar({
   currentUser,
   onLogout
 }) {
-  const tabs = [
+  const isAdmin = currentUser?.role?.toLowerCase().includes('admin');
+
+  // Base operational tabs for staff
+  const baseTabs = [
     { id: 'daybook', label: 'Daybook', icon: BookOpen },
     { id: 'sales', label: 'Sales', icon: FileText },
     { id: 'purchase', label: 'Purchase', icon: ShoppingBag },
@@ -32,9 +34,12 @@ export default function Navbar({
     { id: 'stock', label: 'Stock', icon: Layers },
     { id: 'damage', label: 'Damage Entry', icon: AlertTriangle },
     { id: 'contacts', label: 'Contacts', icon: Users },
-    { id: 'backup', label: 'Backup & Import', icon: Database },
-    { id: 'others', label: 'Others', icon: MoreHorizontal },
   ];
+
+  // Admin-only modules are placed strictly in the Admin Panel
+  const tabs = isAdmin 
+    ? [...baseTabs, { id: 'admin', label: 'Admin Panel', icon: ShieldCheck }, { id: 'others', label: 'Others', icon: MoreHorizontal }]
+    : [...baseTabs, { id: 'others', label: 'Others', icon: MoreHorizontal }];
 
   const getInitials = (name) => {
     if (!name) return 'U';
@@ -48,19 +53,19 @@ export default function Navbar({
       <div className="brand-section">
         <img 
           src="/logo.png" 
-          alt="JR Marbles Logo" 
+          alt="Billora Logo" 
           className="brand-logo-img" 
           style={{ 
             width: '42px', 
             height: '42px', 
             borderRadius: '50%', 
             objectFit: 'cover',
-            border: '2px solid rgba(255, 255, 255, 0.3)',
-            boxShadow: '0 0 12px rgba(2, 132, 199, 0.4)'
+            border: '2px solid rgba(255, 255, 255, 0.4)',
+            boxShadow: '0 0 12px rgba(2, 132, 199, 0.45)'
           }} 
         />
         <div className="brand-info">
-          <h1>{companyName || 'JR MARBLES & GRANITES'}</h1>
+          <h1>{companyName || 'BILLORA MARBLES & GRANITES'}</h1>
           <p><span className="live-dot" style={{ marginRight: '6px' }}></span>Chengamanadu • GSTIN: {settings?.gstin || '32FGZPR5431L1ZL'}</p>
         </div>
       </div>
@@ -71,7 +76,7 @@ export default function Navbar({
           return (
             <button
               key={tab.id}
-              className={`nav-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+              className={`nav-tab-btn ${activeTab === tab.id ? 'active' : ''} ${tab.id === 'admin' ? 'nav-tab-admin' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
               <Icon size={16} />

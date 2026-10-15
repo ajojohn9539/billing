@@ -57,6 +57,10 @@ export const api = {
   createContact: (data) => request('/contacts', { method: 'POST', body: JSON.stringify(data) }),
   updateContact: (id, data) => request(`/contacts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteContact: (id) => request(`/contacts/${id}`, { method: 'DELETE' }),
+  // Aliases for CustomersView
+  createCustomer: (data) => request('/contacts', { method: 'POST', body: JSON.stringify({ ...data, type: data.type || 'Customer' }) }),
+  updateCustomer: (id, data) => request(`/contacts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCustomer: (id) => request(`/contacts/${id}`, { method: 'DELETE' }),
 
   // 2. Products & Stone Catalog
   getProducts: (params = {}) => {
@@ -195,4 +199,9 @@ export const api = {
     }
     return res.json();
   },
+  // 11. Admin Panel & Dynamic Client Fields
+  getClientFields: (activeOnly = false) => request(`/admin/client-fields${activeOnly ? '?active_only=true' : ''}`),
+  createClientField: (data) => request('/admin/client-fields', { method: 'POST', body: JSON.stringify(data) }),
+  updateClientField: (id, data) => request(`/admin/client-fields/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteClientField: (id) => request(`/admin/client-fields/${id}`, { method: 'DELETE' }),
 };

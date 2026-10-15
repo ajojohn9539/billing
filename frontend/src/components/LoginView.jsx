@@ -7,13 +7,11 @@ import {
   EyeOff, 
   ShieldCheck, 
   AlertCircle, 
-  KeyRound, 
-  Phone,
-  MapPin,
   Building2,
   FileText,
   CreditCard,
-  Truck
+  Truck,
+  Layers
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -24,19 +22,6 @@ export default function LoginView({ onLoginSuccess }) {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  const demoAccounts = [
-    { label: 'Owner / Admin', user: 'admin', pass: 'admin123', role: 'Full Management', icon: '👑' },
-    { label: 'Ganesh (Accountant)', user: 'ganesh', pass: 'ganesh123', role: 'Daybook & Tax Ledger', icon: '📊' },
-    { label: 'Muthu (Sales Counter)', user: 'muthu', pass: 'muthu123', role: 'GST Billing & Quotes', icon: '🛒' },
-    { label: 'Ramesh (Store Yard)', user: 'ramesh', pass: 'ramesh123', role: 'Granite & Marble Stock', icon: '📦' },
-  ];
-
-  const handleQuickFill = (user, pass) => {
-    setUsername(user);
-    setPassword(pass);
-    setError(null);
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -62,91 +47,114 @@ export default function LoginView({ onLoginSuccess }) {
           sessionStorage.setItem('billing_user', JSON.stringify(res.user));
           if (res.token) sessionStorage.setItem('billing_token', res.token);
         }
-        if (onLoginSuccess) {
-          onLoginSuccess(res.user, res.token);
-        }
+        onLoginSuccess(res.user, res.token);
       } else {
-        throw new Error('Authentication succeeded but user profile was not returned.');
+        setError('Authentication failed. Please verify credentials.');
       }
     } catch (err) {
-      console.error('Login error:', err);
-      setError(err.message || 'Invalid username or password. Please try again.');
+      setError(err.message || 'Invalid username or password.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="login-wrapper">
-      <div className="login-portal-container">
-        
-        {/* Left Side: Business Showcase / Info Panel */}
-        <div className="login-business-panel">
-          <div className="portal-brand-badge">
-            <img src="/logo.png" alt="JR Logo" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.4); box-shadow: 0 0 20px rgba(2, 132, 199, 0.5);" />
-            <div className="portal-brand-text">
-              <h2>JR MARBLES & GRANITES</h2>
-              <p className="portal-location">CHENGAMANADU, KOTTARAKKARA</p>
+    <div className="login-page-container">
+      {/* Background Decorative Mesh */}
+      <div className="login-bg-mesh"></div>
+
+      <div className="login-content-box">
+        {/* Left Side: Brand & ERP Information */}
+        <div className="login-brand-hero">
+          <div className="brand-hero-badge">
+            <span className="live-dot"></span>
+            <span>Enterprise ERP 2.0 • Live</span>
+          </div>
+
+          <div className="brand-hero-logo" style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '8px' }}>
+            <img 
+              src="/logo.png" 
+              alt="Billora Logo" 
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: '2.5px solid rgba(255, 255, 255, 0.4)',
+                boxShadow: '0 0 20px rgba(2, 132, 199, 0.45)'
+              }}
+            />
+            <div>
+              <h1 className="hero-brand-title" style={{ fontSize: '2.4rem', fontWeight: 900, letterSpacing: '-0.02em', margin: 0, color: '#ffffff' }}>
+                BILLORA
+              </h1>
+              <p style={{ margin: 0, fontSize: '0.92rem', color: '#bae6fd', fontWeight: 600 }}>
+                Smart Billing & Stone Inventory ERP
+              </p>
             </div>
           </div>
 
-          <div className="portal-hero-tagline">
-            <h1>Premium Marbles, Granites & Natural Stone Slabs</h1>
-            <p>Official Billing, GST Invoicing & Inventory Management Portal</p>
-          </div>
+          <p className="hero-brand-desc">
+            Next-generation enterprise management platform for marble, granite, quartz slabs, 
+            and dimensional stone inventory. Features integrated GST tax invoicing, real-time yard stock tracking, 
+            and automated daily cash/bank reconciliation.
+          </p>
 
-          <div className="portal-business-cards">
-            <div className="portal-card-item">
-              <Phone size={18} className="portal-card-icon" />
-              <div>
-                <span className="card-lbl">Contact Mobiles</span>
-                <span className="card-val">9460110878, 8504882265</span>
-              </div>
-            </div>
-
+          <div className="portal-cards-grid">
             <div className="portal-card-item">
               <Building2 size={18} className="portal-card-icon" />
               <div>
-                <span className="card-lbl">GSTIN (State Code: 32)</span>
-                <span className="card-val font-mono">32FGZPR5431L1ZL</span>
+                <span className="card-lbl">Merchant Enterprise</span>
+                <span className="card-val">Billora Marbles & Granites</span>
               </div>
             </div>
 
             <div className="portal-card-item">
               <CreditCard size={18} className="portal-card-icon" />
               <div>
-                <span className="card-lbl">Indian Bank Current A/c</span>
-                <span className="card-val font-mono">7944010222 • IFSC: IDIB 000C046</span>
+                <span className="card-lbl">GSTIN Registration</span>
+                <span className="card-val">32FGZPR5431L1ZL</span>
               </div>
             </div>
 
             <div className="portal-card-item">
-              <MapPin size={18} className="portal-card-icon" />
+              <Layers size={18} className="portal-card-icon" />
               <div>
-                <span className="card-lbl">Jurisdiction & Location</span>
+                <span className="card-lbl">Stone Yard Location</span>
                 <span className="card-val">Chengamanadu, Kottarakkara, Kerala</span>
               </div>
             </div>
           </div>
 
           <div className="portal-features-list">
-            <div className="feature-pill"><FileText size={14} /> GST Tax Invoices (JR26-27)</div>
+            <div className="feature-pill"><FileText size={14} /> GST Tax Invoices (BIL26-27)</div>
             <div className="feature-pill"><Truck size={14} /> Vehicle & Supply Tracking</div>
             <div className="feature-pill"><ShieldCheck size={14} /> HSN 6802 Stone Catalog</div>
           </div>
         </div>
 
-        {/* Right Side: Secure Staff Login Card */}
+        {/* Right Side: Secure Production Login Card */}
         <div className="login-card">
           <div className="login-header">
             <div className="login-logo-glow">
-              <img src="/logo.png" alt="JR Logo" style="width: 54px; height: 54px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.3); box-shadow: 0 0 15px rgba(2, 132, 199, 0.4);" />
+              <img 
+                src="/logo.png" 
+                alt="Billora Logo" 
+                style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: '2px solid rgba(255, 255, 255, 0.4)',
+                  boxShadow: '0 0 16px rgba(2, 132, 199, 0.45)'
+                }} 
+              />
             </div>
-            <h2 className="login-title">Staff Portal Sign In</h2>
-            <p className="login-subtitle">Authorized Staff Terminal • Chengamanadu</p>
+            <h2 className="login-title">Sign In to Billora</h2>
+            <p className="login-subtitle">Authorized Enterprise Terminal Access</p>
             <div className="login-badge-pill">
               <span className="live-dot"></span>
-              <span>Supabase PostgreSQL Live</span>
+              <span>Cloud PostgreSQL Database</span>
             </div>
           </div>
 
@@ -164,7 +172,7 @@ export default function LoginView({ onLoginSuccess }) {
           <form onSubmit={handleSubmit} className="login-form">
             <div className="form-group">
               <label className="form-label" htmlFor="login-username">
-                Username or Staff Email
+                Username or Email Address
               </label>
               <div className="input-with-icon">
                 <User size={18} className="input-prefix-icon" />
@@ -172,7 +180,7 @@ export default function LoginView({ onLoginSuccess }) {
                   id="login-username"
                   type="text"
                   className="form-input login-input"
-                  placeholder="e.g. admin or muthu"
+                  placeholder="Enter your username or email"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   autoComplete="username"
@@ -183,19 +191,16 @@ export default function LoginView({ onLoginSuccess }) {
             </div>
 
             <div className="form-group">
-              <div className="label-with-hint">
-                <label className="form-label" htmlFor="login-password">
-                  Password
-                </label>
-                <span className="label-hint">Default: username123</span>
-              </div>
+              <label className="form-label" htmlFor="login-password">
+                Password
+              </label>
               <div className="input-with-icon">
                 <Lock size={18} className="input-prefix-icon" />
                 <input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   className="form-input login-input"
-                  placeholder="Enter your password"
+                  placeholder="Enter your account password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
@@ -232,7 +237,7 @@ export default function LoginView({ onLoginSuccess }) {
               {loading ? (
                 <>
                   <div className="login-spinner"></div>
-                  <span>Authenticating Staff...</span>
+                  <span>Authenticating...</span>
                 </>
               ) : (
                 <>
@@ -243,39 +248,12 @@ export default function LoginView({ onLoginSuccess }) {
             </button>
           </form>
 
-          {/* Quick Demo Credentials */}
-          <div className="login-demo-section">
-            <div className="demo-section-header" style="display: flex; align-items: center; gap: 8px;">
-              <img src="/logo.png" alt="JR Logo" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1.5px solid rgba(255, 255, 255, 0.4); box-shadow: 0 0 8px rgba(2, 132, 199, 0.5);" />
-              <span style="font-size: 0.74rem; font-weight: 700; color: #bae6fd;">Quick Staff Logins (1-Click Fill)</span>
-            </div>
-            <div className="demo-accounts-grid">
-              {demoAccounts.map((acc) => (
-                <button
-                  key={acc.user}
-                  type="button"
-                  className="demo-account-chip"
-                  onClick={() => handleQuickFill(acc.user, acc.pass)}
-                  title={`Click to fill ${acc.label} credentials`}
-                >
-                  <span className="demo-chip-icon">{acc.icon}</span>
-                  <div className="demo-chip-info">
-                    <span className="demo-chip-title">{acc.label}</span>
-                    <span className="demo-chip-cred">{acc.user} / {acc.pass}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Footer Info */}
-          <div className="login-card-footer">
+          <div className="login-card-footer" style={{ marginTop: '20px' }}>
             <ShieldCheck size={14} className="text-success" />
-            <span>JR Marbles & Granites • Subject to Kottarakkara Jurisdiction</span>
+            <span>Billora ERP System • 256-Bit Encrypted Session</span>
           </div>
-
         </div>
-
       </div>
     </div>
   );

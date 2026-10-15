@@ -9,7 +9,8 @@ import StockView from './components/StockView';
 import DamageEntryView from './components/DamageEntryView';
 import CustomersView from './components/CustomersView';
 import OthersView from './components/OthersView';
-import BackupMigrationView from './components/BackupMigrationView';
+import AdminPanelView from './components/AdminPanelView';
+import Loader from './components/Loader';
 import { api } from './services/api';
 
 export default function App() {
@@ -25,7 +26,8 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState('daybook');
   const [currencySymbol, setCurrencySymbol] = useState('₹');
-  const [companyName, setCompanyName] = useState('JR MARBLES & GRANITES');
+  const [companyName, setCompanyName] = useState('BILLORA MARBLES & GRANITES');
+  const [globalLoading, setGlobalLoading] = useState(false);
 
   // Master Data
   const [contacts, setContacts] = useState([]);
@@ -36,21 +38,35 @@ export default function App() {
   const [categories, setCategories] = useState([]);
   const [settings, setSettings] = useState(null);
 
-  const refreshAll = () => {
-    api.getSettings().then(s => {
+  const refreshAll = async () => {
+    setGlobalLoading(true);
+    try {
+      const [s, c, p, pur, sl, b, cat] = await Promise.all([
+        api.getSettings().catch(() => null),
+        api.getContacts().catch(() => []),
+        api.getProducts().catch(() => []),
+        api.getPurchases().catch(() => []),
+        api.getSales().catch(() => []),
+        api.getBankAccounts().catch(() => []),
+        api.getCategories().catch(() => [])
+      ]);
+
       if (s) {
         setSettings(s);
-        setCompanyName(s.company_name);
+        setCompanyName(s.company_name || 'BILLORA MARBLES & GRANITES');
         setCurrencySymbol(s.currency_symbol || '₹');
       }
-    }).catch(console.error);
-
-    api.getContacts().then(setContacts).catch(console.error);
-    api.getProducts().then(setProducts).catch(console.error);
-    api.getPurchases().then(setPurchases).catch(console.error);
-    api.getSales().then(setSales).catch(console.error);
-    api.getBankAccounts().then(setBankAccounts).catch(console.error);
-    api.getCategories().then(setCategories).catch(console.error);
+      setContacts(c || []);
+      setProducts(p || []);
+      setPurchases(pur || []);
+      setSales(sl || []);
+      setBankAccounts(b || []);
+      setCategories(cat || []);
+    } catch (err) {
+      console.error('Error refreshing master data:', err);
+    } finally {
+      setGlobalLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -77,17 +93,18 @@ export default function App() {
     setCurrentUser(null);
   };
 
-  // If user is not logged in, show the dedicated stone shop login terminal
+  // If user is not logged in, show the production Billora login terminal
   if (!currentUser) {
     return <LoginView onLoginSuccess={handleLoginSuccess} />;
   }
 
   const suppliers = contacts.filter(c => c.type === 'Supplier' || c.type === 'Both');
   const customers = contacts.filter(c => c.type === 'Customer' || c.type === 'Both');
+  const isAdmin = currentUser?.role?.toLowerCase().includes('admin');
 
   return (
     <div className="app-layout">
-      {/* Top Navbar with 8 Menus + User Profile & Logout */}
+      {/* Top Navbar with Base Menus + Admin Panel (Admin Only) & User Profile */}
       <Navbar 
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -111,7 +128,7 @@ export default function App() {
           />
         )}
 
-        {/* 2. Sales (Section 6) */}
+        {/* 2. Sales */}
         {activeTab === 'sales' && (
           <SalesView 
             sales={sales}
@@ -122,7 +139,7 @@ export default function App() {
           />
         )}
 
-        {/* 3. Purchase (Section 5) */}
+        {/* 3. Purchase */}
         {activeTab === 'purchase' && (
           <PurchaseView 
             purchases={purchases}
@@ -133,7 +150,7 @@ export default function App() {
           />
         )}
 
-        {/* 4. Products (Section 4) */}
+        {/* 4. Products */}
         {activeTab === 'products' && (
           <ProductsView 
             products={products}
@@ -142,7 +159,7 @@ export default function App() {
           />
         )}
 
-        {/* 5. Stock (Section 8) */}
+        {/* 5. Stock */}
         {activeTab === 'stock' && (
           <StockView 
             products={products}
@@ -151,7 +168,7 @@ export default function App() {
           />
         )}
 
-        {/* 6. Damage Entry (Section 7) */}
+        {/* 6. Damage Entry */}
         {activeTab === 'damage' && (
           <DamageEntryView 
             products={products}
@@ -160,7 +177,7 @@ export default function App() {
           />
         )}
 
-        {/* 7. Contacts (Section 3) */}
+        {/* 7. Contacts */}
         {activeTab === 'contacts' && (
           <CustomersView 
             customers={contacts}
@@ -172,15 +189,16 @@ export default function App() {
           />
         )}
 
-                {/* Backup & Data Migration Module */}
-        {activeTab === 'backup' && (
-          <BackupMigrationView 
+        {/* Admin Panel (Admin Only: Dynamic Client Fields, Stock Manual & Backup) */}
+        {activeTab === 'admin' && isAdmin && (
+          <AdminPanelView 
+            currentUser={currentUser}
             currency={currencySymbol}
             onRefresh={refreshAll}
           />
         )}
 
-        {/* 8. Others (Section 10) */}
+        {/* 8. Others */}
         {activeTab === 'others' && (
           <OthersView 
             settings={settings}

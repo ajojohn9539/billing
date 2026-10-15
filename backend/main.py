@@ -28,6 +28,7 @@ from routes.daybook_router import router as daybook_router
 from routes.others_router import router as others_router
 from routes.auth_router import router as auth_router
 from routes.backup_router import router as backup_router
+from routes.admin_router import router as admin_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -41,7 +42,7 @@ async def lifespan(app: FastAPI):
     print("Shutting down Rock Palace API...")
 
 app = FastAPI(
-    title="Rock Palace - Aster Billing & Accounting API",
+    title="Billora - Smart Billing & Stone Inventory ERP API",
     description="Web-based accounting & stone billing system built on FastAPI with Supabase/PostgreSQL & MySQL support",
     version="1.0.0",
     lifespan=lifespan
@@ -74,6 +75,7 @@ app.include_router(daybook_router, prefix="/api")
 app.include_router(others_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(backup_router, prefix="/api")
+app.include_router(admin_router, prefix="/api")
 
 
 @app.get("/api/db-diagnostic")
@@ -116,7 +118,7 @@ def db_diagnostic():
 def health_check():
     return {
         "status": "healthy",
-        "system": "Aster Billing (Rock Palace Stone Shop)",
+        "system": "Billora - Smart Billing & Stone Inventory ERP System",
         "database": "PostgreSQL (Supabase)" if IS_POSTGRES else "MySQL",
         "currency": "INR (₹)",
         "version": "1.0.0"
