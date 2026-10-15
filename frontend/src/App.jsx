@@ -24,7 +24,7 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState('daybook');
   const [currencySymbol, setCurrencySymbol] = useState('₹');
-  const [companyName, setCompanyName] = useState('Rock Palace');
+  const [companyName, setCompanyName] = useState('JR MARBLES & GRANITES');
 
   // Master Data
   const [contacts, setContacts] = useState([]);
@@ -93,6 +93,7 @@ export default function App() {
         onQuickSale={() => setActiveTab('sales')}
         onQuickPurchase={() => setActiveTab('purchase')}
         companyName={companyName}
+        settings={settings}
         currentUser={currentUser}
         onLogout={handleLogout}
       />

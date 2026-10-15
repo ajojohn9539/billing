@@ -8,7 +8,12 @@ import {
   ShieldCheck, 
   AlertCircle, 
   KeyRound, 
-  Sparkles 
+  Phone,
+  MapPin,
+  Building2,
+  FileText,
+  CreditCard,
+  Truck
 } from 'lucide-react';
 import { api } from '../services/api';
 
@@ -21,10 +26,10 @@ export default function LoginView({ onLoginSuccess }) {
   const [error, setError] = useState(null);
 
   const demoAccounts = [
-    { label: 'Admin / Owner', user: 'admin', pass: 'admin123', role: 'Full Access', color: '#f59e0b', icon: '👑' },
-    { label: 'Accountant (Ganesh)', user: 'ganesh', pass: 'ganesh123', role: 'Ledger & Daybook', color: '#10b981', icon: '📊' },
-    { label: 'Sales Staff (Muthu)', user: 'muthu', pass: 'muthu123', role: 'Billing & Quotes', color: '#3b82f6', icon: '🛒' },
-    { label: 'Store Keeper (Ramesh)', user: 'ramesh', pass: 'ramesh123', role: 'Inventory & Stock', color: '#8b5cf6', icon: '📦' },
+    { label: 'Owner / Admin', user: 'admin', pass: 'admin123', role: 'Full Management', icon: '👑' },
+    { label: 'Ganesh (Accountant)', user: 'ganesh', pass: 'ganesh123', role: 'Daybook & Tax Ledger', icon: '📊' },
+    { label: 'Muthu (Sales Counter)', user: 'muthu', pass: 'muthu123', role: 'GST Billing & Quotes', icon: '🛒' },
+    { label: 'Ramesh (Store Yard)', user: 'ramesh', pass: 'ramesh123', role: 'Granite & Marble Stock', icon: '📦' },
   ];
 
   const handleQuickFill = (user, pass) => {
@@ -73,143 +78,204 @@ export default function LoginView({ onLoginSuccess }) {
 
   return (
     <div className="login-wrapper">
-      <div className="login-card">
-        {/* Brand Header */}
-        <div className="login-header">
-          <div className="login-logo-glow">
-            <span className="login-logo-emoji">🪨</span>
+      <div className="login-portal-container">
+        
+        {/* Left Side: Business Showcase / Info Panel */}
+        <div className="login-business-panel">
+          <div className="portal-brand-badge">
+            <div className="jr-circle-logo">JR</div>
+            <div className="portal-brand-text">
+              <h2>JR MARBLES & GRANITES</h2>
+              <p className="portal-location">CHENGAMANADU, KOTTARAKKARA</p>
+            </div>
           </div>
-          <h1 className="login-title">Rock Palace</h1>
-          <p className="login-subtitle">Aster Billing & Stone Inventory ERP</p>
-          <div className="login-badge-pill">
-            <span className="live-dot"></span>
-            <span>Supabase PostgreSQL Terminal</span>
+
+          <div className="portal-hero-tagline">
+            <h1>Premium Marbles, Granites & Natural Stone Slabs</h1>
+            <p>Official Billing, GST Invoicing & Inventory Management Portal</p>
+          </div>
+
+          <div className="portal-business-cards">
+            <div className="portal-card-item">
+              <Phone size={18} className="portal-card-icon" />
+              <div>
+                <span className="card-lbl">Contact Mobiles</span>
+                <span className="card-val">9460110878, 8504882265</span>
+              </div>
+            </div>
+
+            <div className="portal-card-item">
+              <Building2 size={18} className="portal-card-icon" />
+              <div>
+                <span className="card-lbl">GSTIN (State Code: 32)</span>
+                <span className="card-val font-mono">32FGZPR5431L1ZL</span>
+              </div>
+            </div>
+
+            <div className="portal-card-item">
+              <CreditCard size={18} className="portal-card-icon" />
+              <div>
+                <span className="card-lbl">Indian Bank Current A/c</span>
+                <span className="card-val font-mono">7944010222 • IFSC: IDIB 000C046</span>
+              </div>
+            </div>
+
+            <div className="portal-card-item">
+              <MapPin size={18} className="portal-card-icon" />
+              <div>
+                <span className="card-lbl">Jurisdiction & Location</span>
+                <span className="card-val">Chengamanadu, Kottarakkara, Kerala</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="portal-features-list">
+            <div className="feature-pill"><FileText size={14} /> GST Tax Invoices (JR26-27)</div>
+            <div className="feature-pill"><Truck size={14} /> Vehicle & Supply Tracking</div>
+            <div className="feature-pill"><ShieldCheck size={14} /> HSN 6802 Stone Catalog</div>
           </div>
         </div>
 
-        {/* Error Alert */}
-        {error && (
-          <div className="login-alert-danger">
-            <AlertCircle size={18} className="login-alert-icon" />
-            <div className="login-alert-text">
-              <strong>Login Failed:</strong> {error}
+        {/* Right Side: Secure Staff Login Card */}
+        <div className="login-card">
+          <div className="login-header">
+            <div className="login-logo-glow">
+              <div className="jr-circle-logo-sm">JR</div>
             </div>
-          </div>
-        )}
-
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label className="form-label" htmlFor="login-username">
-              Username or Email
-            </label>
-            <div className="input-with-icon">
-              <User size={18} className="input-prefix-icon" />
-              <input
-                id="login-username"
-                type="text"
-                className="form-input login-input"
-                placeholder="e.g. admin or muthu"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                autoFocus
-                disabled={loading}
-              />
+            <h2 className="login-title">Staff Portal Sign In</h2>
+            <p className="login-subtitle">Authorized Staff Terminal • Chengamanadu</p>
+            <div className="login-badge-pill">
+              <span className="live-dot"></span>
+              <span>Supabase PostgreSQL Live</span>
             </div>
           </div>
 
-          <div className="form-group">
-            <div className="label-with-hint">
-              <label className="form-label" htmlFor="login-password">
-                Password
+          {/* Error Alert */}
+          {error && (
+            <div className="login-alert-danger">
+              <AlertCircle size={18} className="login-alert-icon" />
+              <div className="login-alert-text">
+                <strong>Access Denied:</strong> {error}
+              </div>
+            </div>
+          )}
+
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="login-form">
+            <div className="form-group">
+              <label className="form-label" htmlFor="login-username">
+                Username or Staff Email
               </label>
-              <span className="label-hint">Default: username123</span>
+              <div className="input-with-icon">
+                <User size={18} className="input-prefix-icon" />
+                <input
+                  id="login-username"
+                  type="text"
+                  className="form-input login-input"
+                  placeholder="e.g. admin or muthu"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                  autoFocus
+                  disabled={loading}
+                />
+              </div>
             </div>
-            <div className="input-with-icon">
-              <Lock size={18} className="input-prefix-icon" />
-              <input
-                id="login-password"
-                type={showPassword ? 'text' : 'password'}
-                className="form-input login-input"
-                placeholder="Enter password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                disabled={loading}
-              />
-              <button
-                type="button"
-                className="btn-password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-                tabIndex={-1}
-                title={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+
+            <div className="form-group">
+              <div className="label-with-hint">
+                <label className="form-label" htmlFor="login-password">
+                  Password
+                </label>
+                <span className="label-hint">Default: username123</span>
+              </div>
+              <div className="input-with-icon">
+                <Lock size={18} className="input-prefix-icon" />
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  className="form-input login-input"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  className="btn-password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="login-options-row">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                <span>Keep session active</span>
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-primary login-submit-btn"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <div className="login-spinner"></div>
+                  <span>Authenticating Staff...</span>
+                </>
+              ) : (
+                <>
+                  <LogIn size={18} />
+                  <span>Sign In to Terminal</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Quick Demo Credentials */}
+          <div className="login-demo-section">
+            <div className="demo-section-header">
+              <KeyRound size={14} />
+              <span>Quick Staff Logins (1-Click Fill)</span>
+            </div>
+            <div className="demo-accounts-grid">
+              {demoAccounts.map((acc) => (
+                <button
+                  key={acc.user}
+                  type="button"
+                  className="demo-account-chip"
+                  onClick={() => handleQuickFill(acc.user, acc.pass)}
+                  title={`Click to fill ${acc.label} credentials`}
+                >
+                  <span className="demo-chip-icon">{acc.icon}</span>
+                  <div className="demo-chip-info">
+                    <span className="demo-chip-title">{acc.label}</span>
+                    <span className="demo-chip-cred">{acc.user} / {acc.pass}</span>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="login-options-row">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-              />
-              <span>Remember this session</span>
-            </label>
+          {/* Footer Info */}
+          <div className="login-card-footer">
+            <ShieldCheck size={14} className="text-success" />
+            <span>JR Marbles & Granites • Subject to Kottarakkara Jurisdiction</span>
           </div>
 
-          <button
-            type="submit"
-            className="btn btn-primary login-submit-btn"
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <div className="login-spinner"></div>
-                <span>Authenticating Terminal...</span>
-              </>
-            ) : (
-              <>
-                <LogIn size={18} />
-                <span>Sign In to Terminal</span>
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* Quick Demo Credentials Pill Bar */}
-        <div className="login-demo-section">
-          <div className="demo-section-header">
-            <KeyRound size={14} />
-            <span>Quick Staff Login (1-Click Fill)</span>
-          </div>
-          <div className="demo-accounts-grid">
-            {demoAccounts.map((acc) => (
-              <button
-                key={acc.user}
-                type="button"
-                className="demo-account-chip"
-                onClick={() => handleQuickFill(acc.user, acc.pass)}
-                title={`Click to fill ${acc.label} credentials`}
-              >
-                <span className="demo-chip-icon">{acc.icon}</span>
-                <div className="demo-chip-info">
-                  <span className="demo-chip-title">{acc.label}</span>
-                  <span className="demo-chip-cred">{acc.user} / {acc.pass}</span>
-                </div>
-              </button>
-            ))}
-          </div>
         </div>
 
-        {/* Footer info */}
-        <div className="login-card-footer">
-          <ShieldCheck size={14} className="text-success" />
-          <span>Rock Palace Stone Billing v1.0 • Multi-User RBAC</span>
-        </div>
       </div>
     </div>
   );

@@ -351,8 +351,20 @@ ON CONFLICT (id) DO NOTHING;
 
 -- 3. Settings
 INSERT INTO settings (id, company_name, business_type, tagline, phone, email, address, gstin, invoice_prefix, purchase_prefix, currency_symbol, default_tax_rate, payment_terms) VALUES
-(1, 'Rock Palace', 'Granite, Marble & Natural Stones', 'Wholesale & Retail Quarry Direct Stone Merchants', '+91 98401 23456 / 044 2841 9900', 'billing@rockpalace.com', '120/4 GST Road, Tambaram East, Chennai, Tamil Nadu - 600045', '33AABCR1234F1Z5', 'RP/BILL/', 'RP/PUR/', '₹', 18.00, 'Goods once sold cannot be returned without prior inspection. Loading charges applicable. Immediate payment on presentation.')
-ON CONFLICT (id) DO NOTHING;
+(1, 'JR MARBLES & GRANITES', 'Marbles & Granites (Chengamanadu)', 'Wholesale & Retail Granite, Marble & Natural Stones • Chengamanadu', '9460110878, 8504882265', 'jrmarbleschengamanadu@gmail.com', 'Chengamanadu, Kottarakkara, Kollam District, Kerala - 691557', '32FGZPR5431L1ZL', 'JR26-27 ', 'JR/PUR/', '₹', 18.00, '1. This Subject to Kottarakkara Jurisdiction Only.
+2. Payment Should be drawn in favour of above bank details
+3. Goods once sold cannot be taken back or exchanged
+4. Our responsibility ceases the moment goods leave our Showroom
+5. We are not responsible for damage pilferage during transit')
+ON CONFLICT (id) DO UPDATE SET
+    company_name = EXCLUDED.company_name,
+    business_type = EXCLUDED.business_type,
+    tagline = EXCLUDED.tagline,
+    phone = EXCLUDED.phone,
+    address = EXCLUDED.address,
+    gstin = EXCLUDED.gstin,
+    invoice_prefix = EXCLUDED.invoice_prefix,
+    payment_terms = EXCLUDED.payment_terms;
 
 -- 4. Categories
 INSERT INTO categories (id, name, parent_id, type) VALUES

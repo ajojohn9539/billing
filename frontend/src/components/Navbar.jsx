@@ -19,6 +19,7 @@ export default function Navbar({
   onQuickSale, 
   onQuickPurchase, 
   companyName,
+  settings,
   currentUser,
   onLogout
 }) {
@@ -43,12 +44,12 @@ export default function Navbar({
   return (
     <header className="top-header no-print">
       <div className="brand-section">
-        <div className="brand-logo-badge" style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}>
-          🪨
+        <div className="brand-logo-badge jr-logo-badge" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', fontWeight: 900, fontSize: '1.1rem', letterSpacing: '-0.5px', border: '2px solid rgba(255, 255, 255, 0.25)', boxShadow: '0 0 15px rgba(2, 132, 199, 0.4)' }}>
+          JR
         </div>
         <div className="brand-info">
-          <h1>{companyName || 'Rock Palace'}</h1>
-          <p><span className="live-dot" style={{ marginRight: '6px' }}></span>Aster Billing (Stone Shop)</p>
+          <h1>{companyName || 'JR MARBLES & GRANITES'}</h1>
+          <p><span className="live-dot" style={{ marginRight: '6px' }}></span>Chengamanadu • GSTIN: {settings?.gstin || '32FGZPR5431L1ZL'}</p>
         </div>
       </div>
 

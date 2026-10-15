@@ -24,6 +24,16 @@ class SaleCreate(BaseModel):
     transport_charges: float = 0.0
     round_off: float = 0.0
     amount_received: float = 0.0
+    reverse_charge: Optional[str] = "No"
+    transport_mode: Optional[str] = "Road"
+    date_of_supply: Optional[str] = None
+    place_of_supply: Optional[str] = "Kerala"
+    state_code: Optional[str] = "32"
+    eway_bill_no: Optional[str] = ""
+    consignee_name: Optional[str] = ""
+    consignee_address: Optional[str] = ""
+    consignee_state: Optional[str] = "Kerala"
+    consignee_state_code: Optional[str] = "32"
     items: List[SaleItemInput]
 
 class SaleReceiptInput(BaseModel):
@@ -35,11 +45,13 @@ class SaleReceiptInput(BaseModel):
 
 def generate_next_bill_no() -> str:
     settings = query_one("SELECT invoice_prefix FROM settings WHERE id = 1")
-    prefix = settings["invoice_prefix"] if settings and settings["invoice_prefix"] else "RP/BILL/"
-    year = datetime.now().year
+    prefix = settings["invoice_prefix"] if settings and settings["invoice_prefix"] else "JR26-27 "
     cnt = query_one("SELECT COUNT(*) AS c FROM sales")
     next_idx = (cnt["c"] + 1) if cnt else 1
-    return f"{prefix}{year}/{next_idx:04d}"
+    if prefix.endswith(' ') or prefix.endswith('/'):
+        return f"{prefix}{next_idx:03d}"
+    year = datetime.now().year
+    return f"{prefix}/{year}/{next_idx:04d}"
 
 @router.get("/next-bill-no")
 def get_next_bill_no():
@@ -104,11 +116,13 @@ def get_sale(sale_id: int):
     """, (sale_id,))
 
     settings = query_one("SELECT * FROM settings WHERE id = 1")
+    bank = query_one("SELECT * FROM bank_accounts WHERE bank_name ILIKE '%INDIAN BANK%' OR id = 1 LIMIT 1")
 
     return {
         "sale": sale,
         "items": items,
-        "company": settings
+        "company": settings,
+        "bank": bank
     }
 
 @router.post("")
@@ -170,17 +184,25 @@ def create_sale(payload: SaleCreate):
 
     with get_db() as conn:
         with conn.cursor() as cur:
-            # 1. Insert Sales Header
+            # 1. Insert Sales Header with GST Invoice metadata
             cur.execute("""
                 INSERT INTO sales (customer_id, bill_no, date, payment_method, vehicle_no, delivery_address, notes,
                                   subtotal, discount, tax, transport_charges, round_off,
-                                  total, paid, due, status)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                  total, paid, due, status,
+                                  reverse_charge, transport_mode, date_of_supply, place_of_supply, state_code,
+                                  eway_bill_no, consignee_name, consignee_address, consignee_state, consignee_state_code)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 payload.customer_id, bill_no, payload.date,
                 payload.payment_method, payload.vehicle_no or "", payload.delivery_address or "", payload.notes or "",
                 subtotal, discount_total, tax_total, payload.transport_charges, payload.round_off,
-                grand_total, paid, due, status
+                grand_total, paid, due, status,
+                payload.reverse_charge or "No", payload.transport_mode or "Road",
+                payload.date_of_supply or payload.date, payload.place_of_supply or "Kerala",
+                payload.state_code or "32", payload.eway_bill_no or "",
+                payload.consignee_name or "", payload.consignee_address or "",
+                payload.consignee_state or "Kerala", payload.consignee_state_code or "32"
             ))
             sale_id = cur.lastrowid
 
