@@ -156,6 +156,8 @@ export const api = {
   // 8. Others, Bank, Settings & Reports
   getBankAccounts: () => request('/others/bank-accounts'),
   createBankAccount: (data) => request('/others/bank-accounts', { method: 'POST', body: JSON.stringify(data) }),
+  updateBankAccount: (id, data) => request(`/others/bank-accounts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteBankAccount: (id) => request(`/others/bank-accounts/${id}`, { method: 'DELETE' }),
   transferFunds: (data) => request('/others/bank-transfer', { method: 'POST', body: JSON.stringify(data) }),
   getUsers: () => request('/others/users'),
   createUser: (data) => request('/others/users', { method: 'POST', body: JSON.stringify(data) }),

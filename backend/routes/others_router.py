@@ -11,7 +11,21 @@ class BankAccountCreate(BaseModel):
     name: str
     account_number: Optional[str] = ""
     bank_name: Optional[str] = ""
+    branch: Optional[str] = ""
+    ifsc: Optional[str] = ""
+    account_type: Optional[str] = "Current Account"
     opening_balance: float = 0.0
+    current_balance: Optional[float] = None
+
+class BankAccountUpdate(BaseModel):
+    name: Optional[str] = None
+    account_number: Optional[str] = None
+    bank_name: Optional[str] = None
+    branch: Optional[str] = None
+    ifsc: Optional[str] = None
+    account_type: Optional[str] = None
+    opening_balance: Optional[float] = None
+    current_balance: Optional[float] = None
 
 class BankTransferCreate(BaseModel):
     from_account_id: int
@@ -50,11 +64,60 @@ def list_bank_accounts():
 
 @router.post("/bank-accounts")
 def create_bank_account(payload: BankAccountCreate):
+    curr_balance = payload.current_balance if payload.current_balance is not None else payload.opening_balance
     new_id = execute_insert("""
-        INSERT INTO bank_accounts (name, account_number, bank_name, opening_balance, current_balance)
-        VALUES (?, ?, ?, ?, ?)
-    """, (payload.name, payload.account_number, payload.bank_name, payload.opening_balance, payload.opening_balance))
+        INSERT INTO bank_accounts (name, account_number, bank_name, branch, ifsc, account_type, opening_balance, current_balance)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        payload.name,
+        payload.account_number or "",
+        payload.bank_name or "",
+        payload.branch or "",
+        payload.ifsc or "",
+        payload.account_type or "Current Account",
+        payload.opening_balance,
+        curr_balance
+    ))
     return query_one("SELECT * FROM bank_accounts WHERE id = ?", (new_id,))
+
+@router.put("/bank-accounts/{account_id}")
+def update_bank_account(account_id: int, payload: BankAccountUpdate):
+    existing = query_one("SELECT * FROM bank_accounts WHERE id = ?", (account_id,))
+    if not existing:
+        raise HTTPException(status_code=404, detail="Bank account not found")
+
+    name = payload.name if payload.name is not None else existing["name"]
+    account_number = payload.account_number if payload.account_number is not None else (existing.get("account_number") or "")
+    bank_name = payload.bank_name if payload.bank_name is not None else (existing.get("bank_name") or "")
+    branch = payload.branch if payload.branch is not None else (existing.get("branch") or "")
+    ifsc = payload.ifsc if payload.ifsc is not None else (existing.get("ifsc") or "")
+    account_type = payload.account_type if payload.account_type is not None else (existing.get("account_type") or "Current Account")
+    opening_balance = payload.opening_balance if payload.opening_balance is not None else existing.get("opening_balance", 0.0)
+    current_balance = payload.current_balance if payload.current_balance is not None else existing.get("current_balance", 0.0)
+
+    execute_update("""
+        UPDATE bank_accounts
+        SET name = ?, account_number = ?, bank_name = ?, branch = ?, ifsc = ?, account_type = ?, opening_balance = ?, current_balance = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    """, (name, account_number, bank_name, branch, ifsc, account_type, opening_balance, current_balance, account_id))
+
+    return query_one("SELECT * FROM bank_accounts WHERE id = ?", (account_id,))
+
+@router.delete("/bank-accounts/{account_id}")
+def delete_bank_account(account_id: int):
+    existing = query_one("SELECT * FROM bank_accounts WHERE id = ?", (account_id,))
+    if not existing:
+        raise HTTPException(status_code=404, detail="Bank account not found")
+
+    cnt_row = query_one("SELECT COUNT(*) AS c FROM daybook WHERE bank_account_id = ?", (account_id,))
+    if cnt_row and cnt_row["c"] > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot delete account '{existing['name']}' because it is linked to {cnt_row['c']} active daybook transaction records. Please transfer or reassign those entries first."
+        )
+
+    execute_update("DELETE FROM bank_accounts WHERE id = ?", (account_id,))
+    return {"message": "Bank account deleted successfully", "id": account_id}
 
 @router.post("/bank-transfer")
 def transfer_funds(payload: BankTransferCreate):
