@@ -1,0 +1,428 @@
+Rock Palace – Accounting Software Documentation
+
+Rock Palace – Accounting Software
+Documentation
+Business: Rock Palace (stone shop)
+System: Aster Billing (web-based accounting & billing, Laravel/PHP + MySQL)
+Version: 1.0 · Date: 12 Oct 2026
+
+1. Overview
+This document describes how the Rock Palace accounting software works: its modules,
+screens, fields, rules and reports. It covers every menu in the top navigation: Contacts,
+Products, Purchase, Sales, Damage Entry, Stock, Others, Daybook.
+Goals
+Record every purchase, sale, payment and receipt of the shop.
+Track stone stock (slabs, tiles, blocks) accurately, including damage.
+Know customer dues and supplier payables at any time.
+Give a daily cash/bank view (Day Book) and profit reports.
+Users and roles
+Role
+
+Access
+
+Admin / Owner
+
+Everything, including delete, settings, reports
+
+Accountant
+
+Purchase, Sales, Daybook, Contacts, Reports (edit
+allowed, delete limited)
+
+Sales staff
+
+Sales, view Stock, view Contacts
+
+Store keeper
+
+Stock, Damage Entry, view Purchase
+
+2. General Rules (apply to all modules)
+1. Add – Click Add/New, fill the form, press Save. Required fields are marked and
+validated before saving.
+2. Edit – Open the record from the list (pencil icon), change fields, press Update. Every
+edit stores who changed it and when.
+
+Page 1 of 9
+
+Rock Palace – Accounting Software Documentation
+
+3. Delete – Uses soft delete (record is hidden, not erased). A record cannot be deleted if
+it is linked to other records (e.g. a product that has stock or sales). Delete asks for
+confirmation and is allowed for Admin only.
+4. Search, sort, paginate – Every list has a Search box, sortable columns and a Show N
+entries selector (as on the Day Book screen).
+5. Dates are shown as dd/mm/yyyy. Time is recorded automatically.
+6. Currency is Indian Rupee (₹), shown as 0/- .
+7. Audit – Created by, updated by, created at and updated at are stored on every table.
+8. Stock and account balances are always recalculated automatically when a purchase,
+sale, return or damage is added, edited or deleted.
+
+3. Contacts
+Manages customers, suppliers and (optionally) staff/others.
+Fields: Contact type (Customer / Supplier / Both), Name, Company, Phone, Email,
+Address, City, State, GSTIN, Opening balance (and whether To Receive or To Pay), Credit
+limit, Notes, Status (Active/Inactive).
+Actions
+Add: Contacts → Add Contact → fill form → Save.
+Edit: change details; opening balance can be edited only before any transaction exists.
+Delete: blocked if the contact has purchases, sales or daybook entries; mark Inactive
+instead.
+Ledger: shows all bills, payments, and current balance (Due / Excess) for the contact.
+
+4. Products
+Stone items sold or bought by Rock Palace.
+Fields: Product name (e.g. Black Galaxy Granite, Italian Marble, Kota Stone), Code/SKU,
+Category (Granite, Marble, Tiles, Slab, Block, Others), Sub category, Unit (sq.ft, sq.m,
+piece, ton, cubic ft), Size / thickness, Purchase price, Selling price, Tax (GST %), HSN code,
+Opening stock, Minimum stock (reorder level), Image, Status.
+Actions
+Add / Edit: from Products → Add Product. Changing price does not alter old bills.
+
+Page 2 of 9
+
+Rock Palace – Accounting Software Documentation
+
+Delete: only if the product was never used in a purchase, sale or damage entry;
+otherwise mark Inactive.
+Categories & Sub Categories are maintained here and are reused by the Day Book.
+
+5. Purchase
+Records stone and goods bought from suppliers and the payments made.
+
+5.1 Purchase list
+Columns: Sl.No., Date, Invoice No., Supplier, Total, Paid, Due, Status (Unpaid / Partly paid /
+Paid), Actions (View, Edit, Delete, Print, Add payment). Filters: date range, supplier, status.
+
+5.2 Add Purchase
+Header fields
+Field
+
+Rule
+
+Supplier
+
+Required, selected from Contacts
+
+Purchase date
+
+Required, default today
+
+Supplier invoice no.
+
+Required, unique per supplier
+
+Payment method
+
+Cash / Bank / RTGS-NEFT / Cheque / UPI
+
+Notes
+
+Optional
+
+Item rows (add as many as needed)
+Field
+
+Rule
+
+Product
+
+Required
+
+Quantity
+
+Required, greater than 0
+
+Unit
+
+Auto from product
+
+Rate
+
+Required, defaults to product purchase price
+
+Discount
+
+Optional (% or amount)
+
+Page 3 of 9
+
+Rock Palace – Accounting Software Documentation
+
+Field
+
+Rule
+
+Tax %
+
+Auto from product
+
+Line total
+
+Calculated
+
+Footer: Sub total, Discount, Tax, Transport/loading charges, Round off, Grand total,
+Amount paid now, Balance due.
+On Save the system
+1. Creates the purchase and its items.
+2. Increases stock of each product.
+3. Adds the balance to the supplier's payable.
+4. If an amount is paid, creates an Outward entry in the Day Book (cash/bank).
+
+5.3 Edit Purchase
+Open the purchase → Edit → change items, rates, quantity, supplier or payment.
+On Update the system reverses the old stock and account effects and applies the
+new ones.
+Not allowed if the edit would make stock negative (e.g. goods already sold). A clear
+error is shown.
+
+5.4 Delete Purchase
+Admin only, with confirmation.
+Reverses stock and supplier balance; linked payments in the Day Book are also
+removed (or must be removed first, as configured).
+Blocked if stock from this purchase has already been sold and deleting would cause
+negative stock.
+
+5.5 Purchase payment and return
+Add payment: records a part/full payment against a purchase (creates an Outward
+Day Book entry).
+Purchase return: returns goods to the supplier; reduces stock and the payable (or
+creates a refund due).
+
+Page 4 of 9
+
+Rock Palace – Accounting Software Documentation
+
+6. Sales
+Sales list: Sl.No., Date, Bill No., Customer, Total, Received, Due, Status, Actions.
+Add Sale
+Header: Customer (or walk-in), Date, Bill number (auto), Payment method, Vehicle no. /
+delivery address (for stone transport), Notes.
+Items: Product, Quantity (cannot exceed available stock), Rate (defaults to selling
+price, editable by permitted roles), Discount, Tax, Total.
+Footer: Sub total, Discount, Tax, Transport charges, Round off, Grand total, Amount
+received, Balance due.
+On Save: reduces stock, adds to customer receivable, and creates an Inward Day Book
+entry for the amount received.
+Edit / Delete follow the same reverse-and-reapply logic as Purchase. Deleted bills are
+soft-deleted and kept in the audit log.
+Other actions: Print / PDF invoice, Add payment (receipt), Sales return, Quotation to Bill
+conversion.
+
+7. Damage Entry
+Used when stone is broken, cracked or otherwise unsellable.
+Fields: Date, Product, Quantity, Reason (Broken in transit / Cutting loss / Handling /
+Other), Cost value (auto = purchase price × quantity), Remarks, Photo (optional).
+Effects: Reduces stock; the cost value is recorded as a loss in reports.
+Edit / Delete: Edit restores the old quantity and applies the new one. Delete restores the
+stock. Admin approval recommended.
+
+8. Stock
+Read-only views calculated from purchases, sales, returns and damages.
+Stock summary: product, unit, opening, purchased, sold, damaged, current stock,
+stock value.
+Low stock report: items below minimum stock.
+Stock ledger: every movement of one product with date and reference.
+
+Page 5 of 9
+
+Rock Palace – Accounting Software Documentation
+
+Stock adjustment: manual correction after physical counting, with reason; creates an
+adjustment entry (never edit stock directly).
+Formula: Current stock = Opening + Purchases + Sales returns − Sales − Purchase returns
+− Damage ± Adjustments.
+
+9. Daybook
+The screen shown in the system: records every money movement of the day.
+Entry form
+Field
+
+Description
+
+User
+
+Shop/user recording the entry (e.g. ROCK
+PALACE)
+
+Date / Time
+
+Auto-filled, editable by permitted roles
+
+Inward / Outward
+
+Money received (Inward) or paid (Outward)
+
+Category / Sub category
+
+e.g. Rent → Shop rent; Salary; Transport; Sales
+receipt
+
+Payment method
+
+Cash, RTGS/NEFT, Cheque, UPI, Card
+
+Cheque date
+
+Only for cheques
+
+Bank account
+
+Which account (Default = cash / main)
+
+Document No.
+
+Linked bill/invoice/voucher number
+
+Narration
+
+Description
+
+To Be Paid / Due
+
+Outstanding amount of the linked document
+
+Paid
+
+Amount paid/received now
+
+Excess
+
+Amount paid above the due
+
+Buttons: Save stores the entry, Reset clears the form.
+Summary bar: Total balance, Inward, Outward, Daily balance.
+
+Page 6 of 9
+
+Rock Palace – Accounting Software Documentation
+
+Table (Day Book Information): Sl.No., Date, Time, Category, Sub Category, Document
+Number, Type, Method, Cheque Date, Account, Description, To Be Paid, Paid. Includes
+search and paging.
+Rules
+Entries created automatically by purchases, sales and payments appear here and are
+edited from their source document.
+Manual entries (expenses, owner capital, bank deposits) can be added, edited and
+deleted here.
+Cheque entries stay Pending until cleared.
+
+10. Others
+Expenses: rent, electricity, salary, fuel, loading/unloading (posted through Day Book).
+Bank accounts: add accounts, opening balance, transfers between cash and bank.
+Categories & Sub categories for income/expense.
+Reports: Sales report, Purchase report, Profit & Loss, Customer dues, Supplier
+payables, GST summary, Stock valuation, Day-wise cash book. Export to PDF/Excel.
+Settings: company profile (Rock Palace name, logo, address, GSTIN), invoice prefix and
+numbering, tax rates, user roles, backup.
+Users: create staff logins and assign roles.
+
+11. Database Design (main tables)
+Table
+
+Key columns
+
+users
+
+id, name, email, password, role
+
+contacts
+
+id, type, name, phone, address, gstin,
+opening_balance, status
+
+categories / sub_categories
+
+id, name, parent_id
+
+products
+
+id, name, code, category_id, unit, purchase_price,
+selling_price, tax_percent, min_stock
+
+purchases
+
+id, supplier_id, invoice_no, date, subtotal, tax, total,
+paid, due, deleted_at
+
+Page 7 of 9
+
+Rock Palace – Accounting Software Documentation
+
+Table
+
+Key columns
+
+purchase_items
+
+id, purchase_id, product_id, qty, rate, discount, tax,
+total
+
+sales / sale_items
+
+same structure as purchases, with customer_id
+and bill_no
+
+damages
+
+id, product_id, qty, reason, cost_value, date
+
+stock_movements
+
+id, product_id, type, qty, reference_type,
+reference_id, date
+
+bank_accounts
+
+id, name, opening_balance
+
+daybook
+
+id, date, time, type (in/out), category_id,
+sub_category_id, method, cheque_date,
+bank_account_id, document_no, narration,
+to_be_paid, paid, excess
+
+audit_logs
+
+id, user_id, action, table, record_id, old_values,
+new_values
+
+All tables also have created_at, updated_at, and soft delete where needed.
+
+12. Suggested Laravel Structure
+Models: Contact, Product, Category, Purchase, PurchaseItem, Sale, SaleItem, Damage,
+StockMovement, BankAccount, Daybook.
+Routes: Route::resource('purchases', PurchaseController::class) gives index,
+create, store, show, edit, update, destroy. Same for sales, products, contacts, damages.
+Use DB transactions in store, update and destroy so stock and accounts never go out
+of sync.
+Validation: Form Request classes for each module.
+Authorization: Policies / roles for edit and delete.
+Soft deletes and an audit log observer on all models.
+
+13. Daily Workflow
+1. Morning: check Day Book opening balance and low stock.
+
+Page 8 of 9
+
+Rock Palace – Accounting Software Documentation
+
+2. Add purchases when stone arrives; record supplier payment.
+3. Create sales bills; record customer receipts.
+4. Enter damages and expenses as they happen.
+5. Evening: review Day Book daily balance, customer dues and close the day.
+6. Weekly/monthly: run reports, take a database backup.
+
+14. Security and Backup
+Password-protected login with role-based permissions.
+Daily automatic database backup; keep copies off-site.
+Delete and price-edit actions restricted and logged.
+
+15. Future Enhancements
+Barcode/QR labels for slabs, WhatsApp bill sharing, GST e-invoice, multi-branch support,
+mobile app.
+
+Page 9 of 9
+
+
