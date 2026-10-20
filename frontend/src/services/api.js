@@ -1,5 +1,11 @@
-const API_BASE = import.meta.env.VITE_API_URL || '';
-const BASE_URL = API_BASE ? `${API_BASE.replace(/\/+$/, '')}/api` : '/api';
+export const API_BASE = import.meta.env.VITE_API_URL || '';
+export const BASE_URL = API_BASE ? `${API_BASE.replace(/\/+$/, '')}/api` : '/api';
+
+export const getApiUrl = (endpoint = '') => {
+  if (!endpoint) return BASE_URL;
+  const clean = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  return `${BASE_URL}${clean}`;
+};
 
 
 async function request(endpoint, options = {}) {
@@ -215,3 +221,6 @@ export const api = {
   getCompanySettings: () => request('/admin/company-settings'),
   updateCompanySettings: (data) => request('/admin/company-settings', { method: 'PUT', body: JSON.stringify(data) }),
 };
+
+
+export default api;

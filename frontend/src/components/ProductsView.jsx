@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Package, Search, Plus, Edit3, Trash2, X, CheckCircle2 } from 'lucide-react';
 import { api } from '../services/api';
+import ConfirmModal from './ConfirmModal';
+import Loader from './Loader';
 
 export default function ProductsView({ 
   products, 
@@ -10,6 +12,8 @@ export default function ProductsView({
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [deleteModalProduct, setDeleteModalProduct] = useState(null);
+  const [isDeletingProduct, setIsDeletingProduct] = useState(false);
 
   // Form fields
   const [name, setName] = useState('');
@@ -95,13 +99,21 @@ export default function ProductsView({
     }
   };
 
-  const handleDelete = async (id, prodName) => {
-    if (!window.confirm(`Are you sure you want to delete product "${prodName}"?`)) return;
+  const handleDeleteClick = (p) => {
+    setDeleteModalProduct(p);
+  };
+
+  const handleConfirmDeleteProduct = async () => {
+    if (!deleteModalProduct) return;
+    setIsDeletingProduct(true);
     try {
-      await api.deleteProduct(id);
-      onRefresh();
+      await api.deleteProduct(deleteModalProduct.id);
+      setDeleteModalProduct(null);
+      if (onRefresh) onRefresh();
     } catch (err) {
-      alert(err.message);
+      alert(err.message || "Failed to delete product");
+    } finally {
+      setIsDeletingProduct(false);
     }
   };
 
@@ -213,7 +225,7 @@ export default function ProductsView({
                         </button>
                         <button 
                           className="btn btn-sm btn-danger-outline" 
-                          onClick={() => handleDelete(prod.id, prod.name)}
+                          onClick={() => handleDeleteClick(prod)}
                           title="Delete Item"
                         >
                           <Trash2 size={14} />
@@ -358,6 +370,29 @@ export default function ProductsView({
           </div>
         </div>
       )}
+
+      {/* Confirm Delete Product Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteModalProduct)}
+        title="Delete Product"
+        message={deleteModalProduct ? ("Are you sure you want to delete product \"" + deleteModalProduct.name + "\"? This will remove or mark it inactive in the stone inventory catalog.") : ""}
+        confirmText="Delete Product"
+        isLoading={isDeletingProduct}
+        onCancel={() => !isDeletingProduct && setDeleteModalProduct(null)}
+        onConfirm={handleConfirmDeleteProduct}
+        itemDetails={deleteModalProduct ? (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+              <span style={{ color: "#94a3b8" }}>Item Name:</span>
+              <strong style={{ color: "#f8fafc" }}>{deleteModalProduct.name}</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+              <span style={{ color: "#94a3b8" }}>Current Stock:</span>
+              <strong style={{ color: "#38bdf8" }}>{deleteModalProduct.current_stock} {deleteModalProduct.unit}</strong>
+            </div>
+          </div>
+        ) : null}
+      />
     </div>
   );
 }

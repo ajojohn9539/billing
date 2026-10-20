@@ -19,7 +19,7 @@ import {
   Save,
   Trash2
 } from 'lucide-react';
-import { api } from '../services/api';
+import { api, getApiUrl } from '../services/api';
 
 export default function BackupMigrationView({ currency = '₹', onRefresh }) {
   const [activeTab, setActiveTab] = useState('import');
@@ -163,7 +163,7 @@ export default function BackupMigrationView({ currency = '₹', onRefresh }) {
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <a 
-            href="/api/backup/documentation/pdf" 
+            href={getApiUrl("/backup/documentation/pdf")} 
             target="_blank" 
             rel="noreferrer"
             className="btn btn-secondary btn-sm"
@@ -341,7 +341,7 @@ export default function BackupMigrationView({ currency = '₹', onRefresh }) {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <a 
-                  href="/api/backup/sample/xml" 
+                  href={getApiUrl("/backup/sample/xml")} 
                   download="sample_jr_marbles.xml"
                   className="btn btn-secondary btn-sm"
                   style={{ justifyContent: 'space-between', textDecoration: 'none' }}
@@ -353,7 +353,7 @@ export default function BackupMigrationView({ currency = '₹', onRefresh }) {
                 </a>
 
                 <a 
-                  href="/api/backup/sample/excel" 
+                  href={getApiUrl("/backup/sample/excel")} 
                   download="sample_jr_marbles.xlsx"
                   className="btn btn-secondary btn-sm"
                   style={{ justifyContent: 'space-between', textDecoration: 'none' }}
@@ -365,7 +365,7 @@ export default function BackupMigrationView({ currency = '₹', onRefresh }) {
                 </a>
 
                 <a 
-                  href="/api/backup/sample/sql" 
+                  href={getApiUrl("/backup/sample/sql")} 
                   download="sample_jr_marbles.sql"
                   className="btn btn-secondary btn-sm"
                   style={{ justifyContent: 'space-between', textDecoration: 'none' }}
@@ -549,7 +549,7 @@ export default function BackupMigrationView({ currency = '₹', onRefresh }) {
               </p>
             </div>
             <a 
-              href="/api/backup/export?format=xml" 
+              href={getApiUrl("/backup/export?format=xml")} 
               className="btn btn-primary"
               style={{ justifyContent: 'center', textDecoration: 'none' }}
             >
@@ -568,7 +568,7 @@ export default function BackupMigrationView({ currency = '₹', onRefresh }) {
               </p>
             </div>
             <a 
-              href="/api/backup/export?format=excel" 
+              href={getApiUrl("/backup/export?format=excel")} 
               className="btn btn-success"
               style={{ justifyContent: 'center', textDecoration: 'none' }}
             >
@@ -587,7 +587,7 @@ export default function BackupMigrationView({ currency = '₹', onRefresh }) {
               </p>
             </div>
             <a 
-              href="/api/backup/export?format=sql" 
+              href={getApiUrl("/backup/export?format=sql")} 
               className="btn btn-secondary"
               style={{ justifyContent: 'center', textDecoration: 'none' }}
             >

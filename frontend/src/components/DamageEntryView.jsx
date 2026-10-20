@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AlertTriangle, Plus, Trash2, Search, X, Check, FileSpreadsheet } from 'lucide-react';
 import { api } from '../services/api';
+import ConfirmModal from './ConfirmModal';
+import Loader from './Loader';
 
 export default function DamageEntryView({ products, currency = '₹', onRefresh }) {
   const todayStr = new Date().toISOString().split('T')[0];
@@ -74,14 +76,22 @@ export default function DamageEntryView({ products, currency = '₹', onRefresh 
     }
   };
 
-  const handleDelete = async (id, prodName) => {
-    if (!window.confirm(`Delete damage entry for ${prodName}? This will restore stone quantity back into active stock.`)) return;
+  const handleDeleteClick = (d) => {
+    setDeleteModalDamage(d);
+  };
+
+  const handleConfirmDeleteDamage = async () => {
+    if (!deleteModalDamage) return;
+    setIsDeletingDamage(true);
     try {
-      await api.deleteDamage(id);
+      await api.deleteDamage(deleteModalDamage.id);
+      setDeleteModalDamage(null);
       loadDamages();
-      onRefresh();
+      if (onRefresh) onRefresh();
     } catch (err) {
-      alert(err.message);
+      alert(err.message || "Failed to remove damage record");
+    } finally {
+      setIsDeletingDamage(false);
     }
   };
 
@@ -174,7 +184,7 @@ export default function DamageEntryView({ products, currency = '₹', onRefresh 
                       {d.remarks || '—'}
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <button className="btn btn-sm btn-danger-outline" onClick={() => handleDelete(d.id, d.product_name)} title="Restore Stock & Delete">
+                      <button className="btn btn-sm btn-danger-outline" onClick={() => handleDeleteClick(d)} title="Restore Stock & Delete">
                         <Trash2 size={13} />
                       </button>
                     </td>
@@ -273,6 +283,33 @@ export default function DamageEntryView({ products, currency = '₹', onRefresh 
           </div>
         </div>
       )}
+
+      {/* Confirm Delete Damage Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteModalDamage)}
+        title="Delete Damage Record"
+        message={deleteModalDamage ? ("Are you sure you want to remove damage entry for " + deleteModalDamage.product_name + "? This will restore stone quantity back into active inventory.") : ""}
+        confirmText="Delete & Restore Stock"
+        isLoading={isDeletingDamage}
+        onCancel={() => !isDeletingDamage && setDeleteModalDamage(null)}
+        onConfirm={handleConfirmDeleteDamage}
+        itemDetails={deleteModalDamage ? (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+              <span style={{ color: "#94a3b8" }}>Product:</span>
+              <strong style={{ color: "#f8fafc" }}>{deleteModalDamage.product_name}</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+              <span style={{ color: "#94a3b8" }}>Damaged Qty:</span>
+              <strong style={{ color: "#f87171" }}>{deleteModalDamage.qty} {deleteModalDamage.unit}</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+              <span style={{ color: "#94a3b8" }}>Reason:</span>
+              <span style={{ color: "#fbbf24" }}>{deleteModalDamage.reason}</span>
+            </div>
+          </div>
+        ) : null}
+      />
     </div>
   );
 }

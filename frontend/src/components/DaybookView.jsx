@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Search, Plus, RotateCcw, Check, Clock, Trash2, ArrowDownLeft, ArrowUpRight, Filter } from 'lucide-react';
 import { api } from '../services/api';
+import ConfirmModal from './ConfirmModal';
+import Loader from './Loader';
 
 export default function DaybookView({ bankAccounts, categories, currency = '₹', onDataChanged }) {
   const todayStr = new Date().toISOString().split('T')[0];
@@ -28,6 +30,8 @@ export default function DaybookView({ bankAccounts, categories, currency = '₹'
   const [excess, setExcess] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
+  const [deleteModalItem, setDeleteModalItem] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const formatMoney = (val) => `${currency} ${(Number(val) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/-`;
 
@@ -122,14 +126,22 @@ export default function DaybookView({ bankAccounts, categories, currency = '₹'
     }
   };
 
-  const handleDeleteEntry = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this daybook entry?')) return;
+  const handleDeleteClick = (item) => {
+    setDeleteModalItem(item);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModalItem) return;
+    setIsDeleting(true);
     try {
-      await api.deleteDaybookEntry(id);
+      await api.deleteDaybookEntry(deleteModalItem.id);
+      setDeleteModalItem(null);
       loadData();
       if (onDataChanged) onDataChanged();
     } catch (err) {
-      alert(err.message);
+      alert(err.message || 'Failed to delete daybook entry');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -358,7 +370,13 @@ export default function DaybookView({ bankAccounts, categories, currency = '₹'
                 </tr>
               </thead>
               <tbody>
-                {entries && entries.length > 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan="10" style={{ padding: '3.5rem 1rem' }}>
+                      <Loader message="Updating Daybook Transactions..." subMessage="Calculating live cash, bank balances and daily inward/outward registers" />
+                    </td>
+                  </tr>
+                ) : entries && entries.length > 0 ? (
                   entries.map((item, idx) => (
                     <tr key={item.id}>
                       <td style={{ color: 'var(--text-dim)' }}>{idx + 1}</td>
@@ -406,7 +424,7 @@ export default function DaybookView({ bankAccounts, categories, currency = '₹'
                               <Check size={12} />
                             </button>
                           )}
-                          <button className="btn btn-sm btn-danger-outline" onClick={() => handleDeleteEntry(item.id)} title="Delete Entry">
+                          <button className="btn btn-sm btn-danger-outline" onClick={() => handleDeleteClick(item)} title="Delete Entry">
                             <Trash2 size={13} />
                           </button>
                         </div>
@@ -426,6 +444,40 @@ export default function DaybookView({ bankAccounts, categories, currency = '₹'
         </div>
 
       </div>
+
+      {/* In-App Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteModalItem)}
+        title="Delete Daybook Entry"
+        message="Are you sure you want to delete this Daybook entry? This will reverse any linked cash or bank account balances."
+        confirmText="Delete Entry"
+        isLoading={isDeleting}
+        onCancel={() => !isDeleting && setDeleteModalItem(null)}
+        onConfirm={handleConfirmDelete}
+        itemDetails={deleteModalItem ? (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ color: '#94a3b8' }}>Doc No:</span>
+              <strong style={{ color: '#f8fafc' }}>{deleteModalItem.document_no || 'Manual Entry'}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ color: '#94a3b8' }}>Type & Method:</span>
+              <span style={{ color: deleteModalItem.type === 'inward' ? '#34d399' : '#f87171', fontWeight: 600 }}>
+                {deleteModalItem.type?.toUpperCase()} • {deleteModalItem.method}
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ color: '#94a3b8' }}>Amount:</span>
+              <strong style={{ color: '#38bdf8' }}>{formatMoney(deleteModalItem.paid)}</strong>
+            </div>
+            {deleteModalItem.narration && (
+              <div style={{ marginTop: '6px', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                {deleteModalItem.narration}
+              </div>
+            )}
+          </div>
+        ) : null}
+      />
     </div>
   );
 }

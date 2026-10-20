@@ -15,6 +15,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { api } from '../services/api';
+import ConfirmModal from './ConfirmModal';
 import Loader from './Loader';
 
 export default function CustomersView({ 
@@ -26,6 +27,8 @@ export default function CustomersView({
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
+  const [deleteModalContact, setDeleteModalContact] = useState(null);
+  const [isDeletingContact, setIsDeletingContact] = useState(false);
   
   // Standard Form state
   const [name, setName] = useState('');
@@ -143,13 +146,21 @@ export default function CustomersView({
     }
   };
 
-  const handleDelete = async (id, custName) => {
-    if (!window.confirm(`Are you sure you want to delete customer "${custName}"?`)) return;
+  const handleDeleteClick = (c) => {
+    setDeleteModalContact(c);
+  };
+
+  const handleConfirmDeleteContact = async () => {
+    if (!deleteModalContact) return;
+    setIsDeletingContact(true);
     try {
-      await api.deleteContact(id);
-      onRefresh();
+      await api.deleteContact(deleteModalContact.id);
+      setDeleteModalContact(null);
+      if (onRefresh) onRefresh();
     } catch (err) {
       alert(err.message || 'Cannot delete contact');
+    } finally {
+      setIsDeletingContact(false);
     }
   };
 
@@ -315,7 +326,7 @@ export default function CustomersView({
                           </button>
                           <button 
                             className="btn btn-sm btn-danger-outline" 
-                            onClick={() => handleDelete(c.id, c.name)}
+                            onClick={() => handleDeleteClick(c)}
                             title="Delete Customer"
                           >
                             <Trash2 size={14} />
@@ -545,6 +556,29 @@ export default function CustomersView({
           </div>
         </div>
       )}
+
+      {/* Confirm Delete Contact Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteModalContact)}
+        title="Delete Contact"
+        message={deleteModalContact ? ('Are you sure you want to delete contact ' + deleteModalContact.name + '? Linked transactions will prevent hard deletion and set status to Inactive.') : ''}
+        confirmText="Delete Contact"
+        isLoading={isDeletingContact}
+        onCancel={() => !isDeletingContact && setDeleteModalContact(null)}
+        onConfirm={handleConfirmDeleteContact}
+        itemDetails={deleteModalContact ? (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ color: '#94a3b8' }}>Name:</span>
+              <strong style={{ color: '#f8fafc' }}>{deleteModalContact.name}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ color: '#94a3b8' }}>Type:</span>
+              <span style={{ color: '#38bdf8' }}>{deleteModalContact.type}</span>
+            </div>
+          </div>
+        ) : null}
+      />
     </div>
   );
 }

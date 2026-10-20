@@ -335,12 +335,20 @@ CREATE TABLE IF NOT EXISTS payments (
 -- ====================================================================
 
 -- 1. Default Users
-INSERT INTO users (id, name, email, password, role) VALUES
-(1, 'Admin / Owner', 'admin@rockpalace.com', 'admin123', 'Admin / Owner'),
-(2, 'Ganesh (Accountant)', 'ganesh@rockpalace.com', 'ganesh123', 'Accountant'),
-(3, 'Muthu (Sales Staff)', 'muthu@rockpalace.com', 'muthu123', 'Sales staff'),
-(4, 'Ramesh (Store Keeper)', 'ramesh@rockpalace.com', 'ramesh123', 'Store keeper')
-ON CONFLICT (id) DO NOTHING;
+INSERT INTO users (id, name, email, password, role, status) VALUES
+(1, 'Billora Admin', 'admin@billora.com', 'RockPalace2026!', 'admin', 'Active'),
+(2, 'Ganesh (Accountant)', 'accountant@billora.com', 'ganesh123', 'accountant', 'Active'),
+(3, 'Muthu (Sales Staff)', 'sales@billora.com', 'muthu123', 'sales', 'Active'),
+(4, 'Ramesh (Store Keeper)', 'store@billora.com', 'ramesh123', 'store', 'Active'),
+(5, 'Billora Super Sudo', 'sudo@billora.com', 'SudoMaster2026!', 'sudo', 'Active')
+ON CONFLICT (id) DO UPDATE SET
+    name = EXCLUDED.name,
+    email = EXCLUDED.email,
+    password = EXCLUDED.password,
+    role = EXCLUDED.role,
+    status = EXCLUDED.status;
+
+SELECT setval(pg_get_serial_sequence('users', 'id'), COALESCE(MAX(id), 1)) FROM users;
 
 -- 2. Bank Accounts
 INSERT INTO bank_accounts (id, name, account_number, bank_name, opening_balance, current_balance) VALUES

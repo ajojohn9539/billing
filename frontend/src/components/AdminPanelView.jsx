@@ -27,9 +27,10 @@ import {
   UserX,
   Lock
 } from 'lucide-react';
-import { api } from '../services/api';
+import { api, getApiUrl } from '../services/api';
 import BackupMigrationView from './BackupMigrationView';
 import Loader from './Loader';
+import ConfirmModal from './ConfirmModal';
 
 export default function AdminPanelView({ currentUser, currency, onRefresh }) {
   const isSudo = currentUser?.role?.toLowerCase() === 'sudo';
@@ -45,6 +46,8 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
 
   // 1. Dynamic Client Fields State
   const [fields, setFields] = useState([]);
+  const [deleteModalAdmin, setDeleteModalAdmin] = useState(null);
+  const [isDeletingAdmin, setIsDeletingAdmin] = useState(false);
   const [showFieldModal, setShowFieldModal] = useState(false);
   const [fieldModalMode, setFieldModalMode] = useState('add');
   const [selectedField, setSelectedField] = useState(null);
@@ -199,15 +202,14 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
     }
   };
 
-  const handleDeleteField = async (id, label) => {
-    if (!window.confirm(`Are you sure you want to remove dynamic field "${label}"?`)) return;
-    try {
-      await api.deleteClientField(id);
-      setSuccess(`Field "${label}" removed.`);
-      await loadFields();
-    } catch (err) {
-      alert(err.message || 'Failed to delete dynamic field');
-    }
+  const handleDeleteField = (id, label) => {
+    setDeleteModalAdmin({
+      type: 'field',
+      id,
+      title: 'Delete Dynamic Client Field',
+      message: 'Are you sure you want to delete dynamic field "' + label + '"? Client documents will no longer display this field.',
+      itemDetails: <div><span style={{ color: "#94a3b8" }}>Field: </span><strong style={{ color: "#f8fafc" }}>{label}</strong></div>
+    });
   };
 
   // --- USER & ROLES HANDLERS ---
@@ -276,19 +278,39 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
     }
   };
 
-  const handleDeleteUser = async (id, name, role) => {
+  const handleDeleteUser = (id, name, role) => {
     if (role === 'sudo' || id === 5) {
       alert('Security Protection: The root Sudo user cannot be deleted.');
       return;
     }
-    if (!window.confirm(`Are you sure you want to delete user "${name}" (${role})?`)) return;
+    setDeleteModalAdmin({
+      type: 'user',
+      id,
+      name,
+      title: 'Delete Staff User',
+      message: 'Are you sure you want to delete staff account "' + name + '" (' + role + ')? This user will lose access immediately.',
+      itemDetails: <div><span style={{ color: "#94a3b8" }}>User: </span><strong style={{ color: "#f8fafc" }}>{name}</strong> • <span style={{ color: "#38bdf8" }}>{role}</span></div>
+    });
+  };
 
+  const handleConfirmAdminDelete = async () => {
+    if (!deleteModalAdmin) return;
+    setIsDeletingAdmin(true);
     try {
-      await api.deleteUser(id);
-      setSuccess(`User "${name}" deleted.`);
-      await loadUsers();
+      if (deleteModalAdmin.type === 'field') {
+        await api.deleteClientField(deleteModalAdmin.id);
+        setSuccess('Dynamic field deleted successfully.');
+        await loadFields();
+      } else if (deleteModalAdmin.type === 'user') {
+        await api.deleteUser(deleteModalAdmin.id);
+        setSuccess('User deleted successfully.');
+        await loadUsers();
+      }
+      setDeleteModalAdmin(null);
     } catch (err) {
-      alert(err.message || 'Failed to delete user');
+      alert(err.message || 'Deletion failed');
+    } finally {
+      setIsDeletingAdmin(false);
     }
   };
 
@@ -443,7 +465,7 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
 
         <div style={{ display: 'flex', gap: '10px' }}>
           <a 
-            href="/api/admin/documentation/stock-guide-pdf" 
+            href={getApiUrl("/admin/documentation/stock-guide-pdf")} 
             target="_blank" 
             rel="noreferrer"
             className="btn btn-secondary btn-sm"
@@ -951,7 +973,7 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
               </p>
             </div>
             <a 
-              href="/api/admin/documentation/stock-guide-pdf" 
+              href={getApiUrl("/admin/documentation/stock-guide-pdf")} 
               target="_blank" 
               rel="noreferrer" 
               className="btn btn-primary"
@@ -1338,6 +1360,18 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
           </div>
         </div>
       )}
+
+      {/* In-App Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteModalAdmin)}
+        title={deleteModalAdmin?.title || 'Confirm Deletion'}
+        message={deleteModalAdmin?.message || ''}
+        confirmText="Confirm Delete"
+        isLoading={isDeletingAdmin}
+        onCancel={() => !isDeletingAdmin && setDeleteModalAdmin(null)}
+        onConfirm={handleConfirmAdminDelete}
+        itemDetails={deleteModalAdmin?.itemDetails}
+      />
     </div>
   );
 }

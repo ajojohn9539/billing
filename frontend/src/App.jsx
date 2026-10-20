@@ -28,6 +28,33 @@ export default function App() {
   const [currencySymbol, setCurrencySymbol] = useState('₹');
   const [companyName, setCompanyName] = useState('BILLORA MARBLES & GRANITES');
   const [globalLoading, setGlobalLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(false);
+  const [pageLoadingTitle, setPageLoadingTitle] = useState('Loading Daybook Register...');
+  const [pageLoadingSub, setPageLoadingSub] = useState("Syncing cash, bank balances and today's entries");
+
+  const TAB_MODULES = {
+    daybook: { title: 'Loading Daybook (Daily Register)...', sub: 'Syncing real-time cash, bank balances and inward/outward records' },
+    sales: { title: 'Loading Sales & GST Billing...', sub: 'Preparing counter billing, customer ledger, and Rule 46 GST invoices' },
+    purchase: { title: 'Loading Purchases & Stock Inward...', sub: 'Fetching stone supplier invoices, payables, and vehicle transport' },
+    products: { title: 'Loading Stone & Product Catalog...', sub: 'Retrieving marble & granite catalogs, Sq.Ft. pricing and tax rates' },
+    stock: { title: 'Loading Stone Inventory & Slabs Ledger...', sub: 'Calculating live Sq.Ft. stock counts, movements, and minimum stock alerts' },
+    damage: { title: 'Loading Damage & Breakage Register...', sub: 'Retrieving broken stone register, transit losses, and cutting losses' },
+    contacts: { title: 'Loading Customers & Suppliers Directory...', sub: 'Fetching customer ledgers, supplier balances, and GSTIN directory' },
+    others: { title: 'Loading Banking & Accounting Settings...', sub: 'Loading bank accounts, category registers, and system profile' },
+    admin: { title: 'Loading Sudo Controls & Admin Panel...', sub: 'Loading master controls, dynamic client fields, and staff roles' }
+  };
+
+  const handleTabChange = (newTab) => {
+    if (newTab === activeTab) return;
+    const info = TAB_MODULES[newTab] || { title: 'Loading Module...', sub: 'Please wait while we sync your records' };
+    setPageLoadingTitle(info.title);
+    setPageLoadingSub(info.sub);
+    setPageLoading(true);
+    setActiveTab(newTab);
+    setTimeout(() => {
+      setPageLoading(false);
+    }, 280);
+  };
 
   // Master Data
   const [contacts, setContacts] = useState([]);
@@ -79,7 +106,7 @@ export default function App() {
     setCurrentUser(user);
     const r = (user?.role || '').toLowerCase();
     if (r === 'sudo') setActiveTab('admin');
-    else if (r === 'sales') setActiveTab('sales');
+    else if (r === 'sales') handleTabChange('sales');
     else if (r === 'store') setActiveTab('stock');
     else if (r === 'accountant') setActiveTab('daybook');
     else setActiveTab('daybook');
@@ -115,9 +142,9 @@ export default function App() {
       {/* Top Navbar with Base Menus + Admin Panel (Admin Only) & User Profile */}
       <Navbar 
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onQuickSale={() => setActiveTab('sales')}
-        onQuickPurchase={() => setActiveTab('purchase')}
+        setActiveTab={handleTabChange}
+        onQuickSale={() => handleTabChange('sales')}
+        onQuickPurchase={() => handleTabChange('purchase')}
         companyName={companyName}
         settings={settings}
         currentUser={currentUser}
@@ -126,6 +153,23 @@ export default function App() {
 
       {/* Main Viewport */}
       <main className="main-viewport">
+        {pageLoading ? (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '65vh',
+            width: '100%',
+            animation: 'fadeIn 0.2s ease-out'
+          }}>
+            <Loader 
+              message={pageLoadingTitle} 
+              subMessage={pageLoadingSub}
+              size="large" 
+            />
+          </div>
+        ) : (
+          <>
         {/* 1. Daybook (Default daily cash/bank overview) */}
         {activeTab === 'daybook' && (
           <DaybookView 
@@ -192,7 +236,7 @@ export default function App() {
             currency={currencySymbol}
             onRefresh={refreshAll}
             onSelectCustomerInvoices={(id) => {
-              setActiveTab('sales');
+              handleTabChange('sales');
             }}
           />
         )}
@@ -213,6 +257,8 @@ export default function App() {
             currency={currencySymbol}
             onRefresh={refreshAll}
           />
+        )}
+          </>
         )}
       </main>
     </div>

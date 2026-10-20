@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { CreditCard, Search, Trash2, ArrowUpRight, CheckCircle2 } from 'lucide-react';
 import { api } from '../services/api';
+import ConfirmModal from './ConfirmModal';
+import Loader from './Loader';
 
 export default function PaymentsView({ 
   payments, 
@@ -9,16 +11,26 @@ export default function PaymentsView({
   onViewInvoice 
 }) {
   const [search, setSearch] = useState('');
+  const [deleteModalPayment, setDeleteModalPayment] = useState(null);
+  const [isDeletingPayment, setIsDeletingPayment] = useState(false);
 
   const formatMoney = (val) => `${currency} ${(Number(val) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-  const handleDelete = async (id, ref) => {
-    if (!window.confirm(`Are you sure you want to void/delete this payment record (${ref || id})? This will restore the invoice balance due.`)) return;
+  const handleDeleteClick = (p) => {
+    setDeleteModalPayment(p);
+  };
+
+  const handleConfirmDeletePayment = async () => {
+    if (!deleteModalPayment) return;
+    setIsDeletingPayment(true);
     try {
-      await api.deletePayment(id);
-      onRefresh();
+      await api.deletePayment(deleteModalPayment.id);
+      setDeleteModalPayment(null);
+      if (onRefresh) onRefresh();
     } catch (err) {
-      alert(err.message);
+      alert(err.message || 'Failed to void payment');
+    } finally {
+      setIsDeletingPayment(false);
     }
   };
 
@@ -121,7 +133,7 @@ export default function PaymentsView({
                     <td style={{ textAlign: 'right' }}>
                       <button 
                         className="btn btn-sm btn-danger-outline" 
-                        onClick={() => handleDelete(p.id, p.transaction_reference || p.invoice_number)}
+                        onClick={() => handleDeleteClick(p)}
                         title="Void / Delete Payment"
                       >
                         <Trash2 size={13} />
@@ -140,6 +152,29 @@ export default function PaymentsView({
           </table>
         </div>
       </div>
+
+      {/* Confirm Void Payment Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteModalPayment)}
+        title="Void / Delete Payment"
+        message={deleteModalPayment ? ('Are you sure you want to void payment of ' + formatMoney(deleteModalPayment.amount) + ' against invoice ' + (deleteModalPayment.invoice_number || 'N/A') + '? This will restore the balance due.') : ''}
+        confirmText="Void Payment"
+        isLoading={isDeletingPayment}
+        onCancel={() => !isDeletingPayment && setDeleteModalPayment(null)}
+        onConfirm={handleConfirmDeletePayment}
+        itemDetails={deleteModalPayment ? (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ color: '#94a3b8' }}>Invoice:</span>
+              <strong style={{ color: '#f8fafc' }}>{deleteModalPayment.invoice_number}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ color: '#94a3b8' }}>Amount:</span>
+              <strong style={{ color: '#f87171' }}>{formatMoney(deleteModalPayment.amount)}</strong>
+            </div>
+          </div>
+        ) : null}
+      />
     </div>
   );
 }

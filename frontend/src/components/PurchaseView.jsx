@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ShoppingBag, Search, Plus, Eye, CreditCard, Trash2, X, Check, Truck } from 'lucide-react';
 import { api } from '../services/api';
+import ConfirmModal from './ConfirmModal';
+import Loader from './Loader';
 
 export default function PurchaseView({ purchases, suppliers, products, currency = '₹', onRefresh }) {
   const todayStr = new Date().toISOString().split('T')[0];
@@ -11,6 +13,8 @@ export default function PurchaseView({ purchases, suppliers, products, currency 
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState(null);
   const [viewModalPurchase, setViewModalPurchase] = useState(null);
+  const [deleteModalPurchase, setDeleteModalPurchase] = useState(null);
+  const [isDeletingPurchase, setIsDeletingPurchase] = useState(false);
 
   // Form State
   const [supplierId, setSupplierId] = useState('');
@@ -155,13 +159,21 @@ export default function PurchaseView({ purchases, suppliers, products, currency 
     }
   };
 
-  const handleDelete = async (id, invNo) => {
-    if (!window.confirm(`Are you sure you want to delete purchase invoice ${invNo}? This will reverse stone stock increases.`)) return;
+  const handleDeleteClick = (p) => {
+    setDeleteModalPurchase(p);
+  };
+
+  const handleConfirmDeletePurchase = async () => {
+    if (!deleteModalPurchase) return;
+    setIsDeletingPurchase(true);
     try {
-      await api.deletePurchase(id);
-      onRefresh();
+      await api.deletePurchase(deleteModalPurchase.id);
+      setDeleteModalPurchase(null);
+      if (onRefresh) onRefresh();
     } catch (err) {
-      alert(err.message);
+      alert(err.message || "Failed to delete purchase invoice");
+    } finally {
+      setIsDeletingPurchase(false);
     }
   };
 
@@ -265,7 +277,7 @@ export default function PurchaseView({ purchases, suppliers, products, currency 
                             <span>Pay</span>
                           </button>
                         )}
-                        <button className="btn btn-sm btn-danger-outline" onClick={() => handleDelete(p.id, p.invoice_no)} title="Delete Purchase">
+                        <button className="btn btn-sm btn-danger-outline" onClick={() => handleDeleteClick(p)} title="Delete Purchase">
                           <Trash2 size={13} />
                         </button>
                       </div>
@@ -563,6 +575,33 @@ export default function PurchaseView({ purchases, suppliers, products, currency 
           </div>
         </div>
       )}
+
+      {/* Confirm Delete Purchase Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteModalPurchase)}
+        title="Delete Purchase Invoice"
+        message={deleteModalPurchase ? ("Are you sure you want to delete purchase invoice " + deleteModalPurchase.invoice_no + "? This will reverse stone inventory additions and supplier payables.") : ""}
+        confirmText="Delete Purchase & Reverse Stock"
+        isLoading={isDeletingPurchase}
+        onCancel={() => !isDeletingPurchase && setDeleteModalPurchase(null)}
+        onConfirm={handleConfirmDeletePurchase}
+        itemDetails={deleteModalPurchase ? (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+              <span style={{ color: "#94a3b8" }}>Invoice No:</span>
+              <strong style={{ color: "#f8fafc" }}>{deleteModalPurchase.invoice_no}</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+              <span style={{ color: "#94a3b8" }}>Supplier:</span>
+              <strong style={{ color: "#38bdf8" }}>{deleteModalPurchase.supplier_name}</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+              <span style={{ color: "#94a3b8" }}>Total:</span>
+              <strong style={{ color: "#34d399" }}>{formatMoney(deleteModalPurchase.total)}</strong>
+            </div>
+          </div>
+        ) : null}
+      />
     </div>
   );
 }

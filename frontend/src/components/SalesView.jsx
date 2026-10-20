@@ -16,6 +16,8 @@ import {
   Layers
 } from 'lucide-react';
 import { api } from '../services/api';
+import ConfirmModal from './ConfirmModal';
+import Loader from './Loader';
 
 // Indian Rupee currency to words converter
 function numberToWordsINR(num) {
@@ -63,6 +65,8 @@ export default function SalesView({ sales, customers, products, currency = '₹'
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState(null);
   const [printModalSale, setPrintModalSale] = useState(null);
+  const [deleteModalSale, setDeleteModalSale] = useState(null);
+  const [isDeletingSale, setIsDeletingSale] = useState(false);
 
   // Form State
   const [customerId, setCustomerId] = useState('');
@@ -280,13 +284,21 @@ export default function SalesView({ sales, customers, products, currency = '₹'
     }
   };
 
-  const handleDelete = async (id, billNum) => {
-    if (!window.confirm(`Are you sure you want to delete sales bill ${billNum}? This will restore stone items back to inventory.`)) return;
+  const handleDeleteClick = (s) => {
+    setDeleteModalSale(s);
+  };
+
+  const handleConfirmDeleteSale = async () => {
+    if (!deleteModalSale) return;
+    setIsDeletingSale(true);
     try {
-      await api.deleteSale(id);
-      onRefresh();
+      await api.deleteSale(deleteModalSale.id);
+      setDeleteModalSale(null);
+      if (onRefresh) onRefresh();
     } catch (err) {
-      alert(err.message);
+      alert(err.message || 'Failed to delete sales bill');
+    } finally {
+      setIsDeletingSale(false);
     }
   };
 
@@ -411,7 +423,7 @@ export default function SalesView({ sales, customers, products, currency = '₹'
                             <CreditCard size={13} />
                           </button>
                         )}
-                        <button className="btn btn-sm btn-danger-outline" onClick={() => handleDelete(s.id, s.bill_no)} title="Delete Bill">
+                        <button className="btn btn-sm btn-danger-outline" onClick={() => handleDeleteClick(s)} title="Delete Bill">
                           <Trash2 size={13} />
                         </button>
                       </div>
@@ -1085,6 +1097,33 @@ export default function SalesView({ sales, customers, products, currency = '₹'
           </div>
         </div>
       )}
+
+      {/* Confirm Delete Sales Bill Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteModalSale)}
+        title="Delete Sales Bill"
+        message={deleteModalSale ? ("Are you sure you want to delete sales bill " + deleteModalSale.bill_no + "? This will restore stone items back to inventory.") : ""}
+        confirmText="Delete Bill & Restore Stock"
+        isLoading={isDeletingSale}
+        onCancel={() => !isDeletingSale && setDeleteModalSale(null)}
+        onConfirm={handleConfirmDeleteSale}
+        itemDetails={deleteModalSale ? (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ color: '#94a3b8' }}>Bill No:</span>
+              <strong style={{ color: '#f8fafc' }}>{deleteModalSale.bill_no}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ color: '#94a3b8' }}>Customer:</span>
+              <strong style={{ color: '#38bdf8' }}>{deleteModalSale.customer_name}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ color: '#94a3b8' }}>Grand Total:</span>
+              <strong style={{ color: '#34d399' }}>{formatMoney(deleteModalSale.total)}</strong>
+            </div>
+          </div>
+        ) : null}
+      />
     </div>
   );
 }
