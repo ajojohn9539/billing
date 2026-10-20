@@ -6,95 +6,76 @@ router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 @router.get("/stats")
 def get_dashboard_stats():
-    today = date.today().isoformat()
-    
-    # 1. Update any pending invoices whose due_date < today to 'overdue' if balance_due > 0
-    with_pending = query_all("SELECT id FROM invoices WHERE status = 'pending' AND due_date < ? AND balance_due > 0;", (today,))
-    for inv in with_pending:
-        from database import execute_update
-        execute_update("UPDATE invoices SET status = 'overdue' WHERE id = ?;", (inv["id"],))
+    # 1. Company Settings
+    settings = query_one("SELECT currency_symbol, company_name FROM settings WHERE id = 1;")
+    curr_symbol = settings.get("currency_symbol", "₹") if settings else "₹"
+    company_name = settings.get("company_name", "BILLORA MARBLES & GRANITES") if settings else "BILLORA MARBLES & GRANITES"
 
-    # 2. Settings currency
-    settings = query_one("SELECT currency_symbol, currency_code, company_name FROM settings WHERE id = 1;")
-    curr_symbol = settings["currency_symbol"] if settings else "$"
-    company_name = settings["company_name"] if settings else "Apex"
-
-    # 3. Overall Totals
-    totals = query_one("""
+    # 2. Sales Totals
+    sales_totals = query_one("""
         SELECT 
-            COALESCE(SUM(grand_total), 0.0) AS total_billed,
-            COALESCE(SUM(paid_amount), 0.0) AS total_collected,
-            COALESCE(SUM(balance_due), 0.0) AS total_receivable,
+            COALESCE(SUM(total), 0.0) AS total_billed,
+            COALESCE(SUM(paid), 0.0) AS total_collected,
+            COALESCE(SUM(due), 0.0) AS total_receivable,
             COUNT(*) AS total_invoices
-        FROM invoices;
-    """)
+        FROM sales
+        WHERE deleted_at IS NULL;
+    """) or {"total_billed": 0.0, "total_collected": 0.0, "total_receivable": 0.0, "total_invoices": 0}
 
-    # 4. Invoices count and amounts grouped by status
-    status_summary = query_all("""
+    # 3. Purchases Totals
+    purchases_totals = query_one("""
         SELECT 
-            status,
-            COUNT(*) AS count,
-            COALESCE(SUM(grand_total), 0.0) AS total_amount,
-            COALESCE(SUM(balance_due), 0.0) AS balance_due
-        FROM invoices
-        GROUP BY status;
-    """)
+            COALESCE(SUM(total), 0.0) AS total_purchases,
+            COALESCE(SUM(paid), 0.0) AS total_purchase_paid,
+            COALESCE(SUM(due), 0.0) AS total_purchase_due,
+            COUNT(*) AS count
+        FROM purchases
+        WHERE deleted_at IS NULL;
+    """) or {"total_purchases": 0.0, "total_purchase_paid": 0.0, "total_purchase_due": 0.0, "count": 0}
 
-    # 5. Overdue specific
-    overdue_summary = query_one("""
+    # 4. Bank Balances Total
+    bank_total_row = query_one("""
+        SELECT COALESCE(SUM(current_balance), 0.0) AS total_bank_balance
+        FROM bank_accounts;
+    """) or {"total_bank_balance": 0.0}
+
+    # 5. Inventory Valuation
+    stock_val_row = query_one("""
         SELECT 
-            COUNT(*) AS count,
-            COALESCE(SUM(balance_due), 0.0) AS amount
-        FROM invoices
-        WHERE status = 'overdue';
-    """)
+            COALESCE(SUM(current_stock * purchase_price), 0.0) AS valuation,
+            COUNT(*) AS total_products
+        FROM products
+        WHERE (status = 'Active' OR status IS NULL) AND deleted_at IS NULL;
+    """) or {"valuation": 0.0, "total_products": 0}
 
-    # 6. Customers and Products count
-    customers_count = query_one("SELECT COUNT(*) AS c FROM customers;")["c"]
-    products_count = query_one("SELECT COUNT(*) AS c FROM products;")["c"]
+    # 6. Customers count
+    customers_cnt_row = query_one("""
+        SELECT COUNT(*) AS c FROM contacts WHERE type IN ('Customer', 'Both') AND deleted_at IS NULL;
+    """) or {"c": 0}
 
-    # 7. Monthly Revenue Trend (using SQLite strftime on issue_date)
-    monthly_trend = query_all("""
-        SELECT 
-            strftime('%Y-%m', issue_date) AS month,
-            COALESCE(SUM(grand_total), 0.0) AS billed,
-            COALESCE(SUM(paid_amount), 0.0) AS collected
-        FROM invoices
-        GROUP BY strftime('%Y-%m', issue_date)
-        ORDER BY month ASC
-        LIMIT 12;
-    """)
-
-    # 8. Recent 5 Invoices
-    recent_invoices = query_all("""
-        SELECT * FROM v_invoice_summary
-        ORDER BY issue_date DESC, id DESC
-        LIMIT 6;
-    """)
-
-    # 9. Recent 5 Payments
-    recent_payments = query_all("""
-        SELECT p.*, i.invoice_number, c.name AS customer_name
-        FROM payments p
-        JOIN invoices i ON p.invoice_id = i.id
-        JOIN customers c ON i.customer_id = c.id
-        ORDER BY p.payment_date DESC, p.id DESC
+    # 7. Recent 6 Sales Bills
+    recent_sales = query_all("""
+        SELECT s.id, s.bill_no, s.date, c.name AS customer_name, s.total, s.paid, s.due, s.status AS payment_status
+        FROM sales s
+        LEFT JOIN contacts c ON s.customer_id = c.id
+        WHERE s.deleted_at IS NULL
+        ORDER BY s.date DESC, s.id DESC
         LIMIT 6;
     """)
 
     return {
+        "status": "success",
         "company_name": company_name,
         "currency_symbol": curr_symbol,
-        "total_billed": totals["total_billed"] if totals else 0.0,
-        "total_collected": totals["total_collected"] if totals else 0.0,
-        "total_receivable": totals["total_receivable"] if totals else 0.0,
-        "total_invoices": totals["total_invoices"] if totals else 0,
-        "overdue_count": overdue_summary["count"] if overdue_summary else 0,
-        "overdue_amount": overdue_summary["amount"] if overdue_summary else 0.0,
-        "customers_count": customers_count,
-        "products_count": products_count,
-        "status_summary": status_summary,
-        "monthly_trend": monthly_trend,
-        "recent_invoices": recent_invoices,
-        "recent_payments": recent_payments,
+        "total_billed": float(sales_totals.get("total_billed", 0.0)),
+        "total_collected": float(sales_totals.get("total_collected", 0.0)),
+        "total_receivable": float(sales_totals.get("total_receivable", 0.0)),
+        "total_invoices": int(sales_totals.get("total_invoices", 0)),
+        "total_purchases": float(purchases_totals.get("total_purchases", 0.0)),
+        "total_purchase_due": float(purchases_totals.get("total_purchase_due", 0.0)),
+        "total_bank_balance": float(bank_total_row.get("total_bank_balance", 0.0)),
+        "inventory_valuation": float(stock_val_row.get("valuation", 0.0)),
+        "total_products": int(stock_val_row.get("total_products", 0)),
+        "customers_count": int(customers_cnt_row.get("c", 0)),
+        "recent_sales": recent_sales
     }
