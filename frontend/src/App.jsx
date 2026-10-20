@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import LoginView from './components/LoginView';
+import DashboardView from './components/DashboardView';
 import DaybookView from './components/DaybookView';
 import SalesView from './components/SalesView';
 import PurchaseView from './components/PurchaseView';
@@ -24,15 +25,16 @@ export default function App() {
     }
   });
 
-  const [activeTab, setActiveTab] = useState('daybook');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [currencySymbol, setCurrencySymbol] = useState('₹');
   const [companyName, setCompanyName] = useState('BILLORA MARBLES & GRANITES');
   const [globalLoading, setGlobalLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(false);
-  const [pageLoadingTitle, setPageLoadingTitle] = useState('Loading Daybook Register...');
-  const [pageLoadingSub, setPageLoadingSub] = useState("Syncing cash, bank balances and today's entries");
+  const [pageLoadingTitle, setPageLoadingTitle] = useState('Loading Executive Dashboard...');
+  const [pageLoadingSub, setPageLoadingSub] = useState('Syncing live business KPIs, bank balances, and inventory overview');
 
   const TAB_MODULES = {
+    dashboard: { title: 'Loading Executive Dashboard...', sub: 'Syncing live business KPIs, bank balances, and inventory overview' },
     daybook: { title: 'Loading Daybook (Daily Register)...', sub: 'Syncing real-time cash, bank balances and inward/outward records' },
     sales: { title: 'Loading Sales & GST Billing...', sub: 'Preparing counter billing, customer ledger, and Rule 46 GST invoices' },
     purchase: { title: 'Loading Purchases & Stock Inward...', sub: 'Fetching stone supplier invoices, payables, and vehicle transport' },
@@ -105,11 +107,11 @@ export default function App() {
   const handleLoginSuccess = (user, token) => {
     setCurrentUser(user);
     const r = (user?.role || '').toLowerCase();
-    if (r === 'sudo') setActiveTab('admin');
-    else if (r === 'sales') handleTabChange('sales');
-    else if (r === 'store') setActiveTab('stock');
-    else if (r === 'accountant') setActiveTab('daybook');
-    else setActiveTab('daybook');
+    if (r === 'sudo') setActiveTab('dashboard');
+    else if (r === 'sales') setActiveTab('dashboard');
+    else if (r === 'store') setActiveTab('dashboard');
+    else if (r === 'accountant') setActiveTab('dashboard');
+    else setActiveTab('dashboard');
     refreshAll();
   };
 
@@ -170,94 +172,110 @@ export default function App() {
           </div>
         ) : (
           <>
-        {/* 1. Daybook (Default daily cash/bank overview) */}
-        {activeTab === 'daybook' && (
-          <DaybookView 
-            bankAccounts={bankAccounts}
-            categories={categories}
-            currency={currencySymbol}
-            onDataChanged={refreshAll}
-          />
-        )}
+            {/* 0. Executive Dashboard (Default Landing Page) */}
+            {activeTab === 'dashboard' && (
+              <DashboardView 
+                sales={sales}
+                purchases={purchases}
+                products={products}
+                contacts={contacts}
+                bankAccounts={bankAccounts}
+                settings={settings}
+                companyName={companyName}
+                currency={currencySymbol}
+                onNavigate={handleTabChange}
+              />
+            )}
 
-        {/* 2. Sales */}
-        {activeTab === 'sales' && (
-          <SalesView 
-            sales={sales}
-            customers={customers}
-            products={products}
-            currency={currencySymbol}
-            onRefresh={refreshAll}
-          />
-        )}
+            {/* 1. Daybook (Daily cash/bank overview) */}
+            {activeTab === 'daybook' && (
+              <DaybookView 
+                bankAccounts={bankAccounts}
+                categories={categories}
+                currency={currencySymbol}
+                onDataChanged={refreshAll}
+              />
+            )}
 
-        {/* 3. Purchase */}
-        {activeTab === 'purchase' && (
-          <PurchaseView 
-            purchases={purchases}
-            suppliers={suppliers}
-            products={products}
-            currency={currencySymbol}
-            onRefresh={refreshAll}
-          />
-        )}
+            {/* 2. Sales */}
+            {activeTab === 'sales' && (
+              <SalesView 
+                settings={settings}
+                sales={sales}
+                customers={customers}
+                products={products}
+                currency={currencySymbol}
+                onRefresh={refreshAll}
+              />
+            )}
 
-        {/* 4. Products */}
-        {activeTab === 'products' && (
-          <ProductsView 
-            products={products}
-            currency={currencySymbol}
-            onRefresh={refreshAll}
-          />
-        )}
+            {/* 3. Purchase */}
+            {activeTab === 'purchase' && (
+              <PurchaseView 
+                purchases={purchases}
+                suppliers={suppliers}
+                products={products}
+                currency={currencySymbol}
+                onRefresh={refreshAll}
+              />
+            )}
 
-        {/* 5. Stock */}
-        {activeTab === 'stock' && (
-          <StockView 
-            products={products}
-            currency={currencySymbol}
-            onRefresh={refreshAll}
-          />
-        )}
+            {/* 4. Products */}
+            {activeTab === 'products' && (
+              <ProductsView 
+                products={products}
+                currency={currencySymbol}
+                onRefresh={refreshAll}
+              />
+            )}
 
-        {/* 6. Damage Entry */}
-        {activeTab === 'damage' && (
-          <DamageEntryView 
-            products={products}
-            currency={currencySymbol}
-            onRefresh={refreshAll}
-          />
-        )}
+            {/* 5. Stock */}
+            {activeTab === 'stock' && (
+              <StockView 
+                products={products}
+                currency={currencySymbol}
+                onRefresh={refreshAll}
+              />
+            )}
 
-        {/* 7. Contacts */}
-        {activeTab === 'contacts' && (
-          <CustomersView 
-            customers={contacts}
-            currency={currencySymbol}
-            onRefresh={refreshAll}
-            onSelectCustomerInvoices={(id) => {
-              handleTabChange('sales');
-            }}
-          />
-        )}
+            {/* 6. Damage Entry */}
+            {activeTab === 'damage' && (
+              <DamageEntryView 
+                products={products}
+                currency={currencySymbol}
+                onRefresh={refreshAll}
+              />
+            )}
 
-        {/* Admin Panel (Admin Only: Dynamic Client Fields, Stock Manual & Backup) */}
-        {activeTab === 'admin' && (isAdmin || isSudo) && (
-          <AdminPanelView 
-            currentUser={currentUser}
-            currency={currencySymbol}
-            onRefresh={refreshAll}
-          />
-        )}
+            {/* 7. Contacts */}
+            {activeTab === 'contacts' && (
+              <CustomersView 
+                customers={contacts}
+                currency={currencySymbol}
+                onRefresh={refreshAll}
+                onSelectCustomerInvoices={(id) => {
+                  handleTabChange('sales');
+                }}
+              />
+            )}
 
-        {/* 8. Others */}
-        {activeTab === 'others' && (
-          <OthersView 
-            settings={settings}
-            currency={currencySymbol}
-            onRefresh={refreshAll}
-          />
-        )}
+            {/* Admin Panel (Admin Only: Dynamic Client Fields, Stock Manual & Backup) */}
+            {activeTab === 'admin' && (isAdmin || isSudo) && (
+              <AdminPanelView 
+                currentUser={currentUser}
+                currency={currencySymbol}
+                onRefresh={refreshAll}
+              />
+            )}
+
+            {/* 8. Others */}
+            {activeTab === 'others' && (
+              <OthersView 
+                settings={settings}
+                currency={currencySymbol}
+                onRefresh={refreshAll}
+              />
+            )}
           </>
         )}
       </main>

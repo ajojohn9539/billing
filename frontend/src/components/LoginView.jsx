@@ -114,10 +114,10 @@ export default function LoginView({ onLoginSuccess }) {
           <div className="login-logo-glow" style={{ 
             width: "76px", 
             height: "76px", 
-            borderRadius: "50%", 
+            borderRadius: "18px", 
             padding: "3px",
-            background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
-            boxShadow: "0 0 28px rgba(2, 132, 199, 0.45)",
+            background: "linear-gradient(135deg, #0284c7 0%, #10b981 100%)",
+            boxShadow: "0 0 32px rgba(2, 132, 199, 0.5)",
             marginBottom: "1rem"
           }}>
             <img 
@@ -126,7 +126,7 @@ export default function LoginView({ onLoginSuccess }) {
               style={{
                 width: "100%",
                 height: "100%",
-                borderRadius: "50%",
+                borderRadius: "16px",
                 objectFit: "cover",
                 border: "2px solid rgba(255, 255, 255, 0.6)"
               }} 

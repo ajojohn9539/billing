@@ -89,7 +89,8 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
     purchase_prefix: 'PUR-BIL-',
     currency_symbol: '₹',
     default_tax_rate: 18.0,
-    payment_terms: 'Net 30 Days'
+    payment_terms: 'Net 30 Days',
+    logo_url: '/logo.png'
   });
 
   useEffect(() => {
@@ -710,6 +711,70 @@ export default function AdminPanelView({ currentUser, currency, onRefresh }) {
           </div>
 
           <form onSubmit={handleSaveCompanySettings}>
+            {/* Brand Logo Configuration */}
+            <div style={{
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '12px',
+              padding: '18px 20px',
+              marginBottom: '20px',
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '16px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '14px',
+                  padding: '2px',
+                  background: 'linear-gradient(135deg, #0284c7 0%, #10b981 100%)',
+                  boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <img 
+                    src={companySettings.logo_url || '/logo.png'} 
+                    alt="Current Logo" 
+                    style={{ width: '100%', height: '100%', borderRadius: '12px', objectFit: 'cover' }}
+                    onError={(e) => { e.currentTarget.src = '/logo.png'; }}
+                  />
+                </div>
+                <div>
+                  <h4 style={{ margin: '0 0 4px 0', fontSize: '0.98rem', fontWeight: 800, color: '#0f172a' }}>
+                    Company Brand Logo
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b' }}>
+                    This logo appears dynamically on the main navbar, login card, executive dashboard, and printed GST tax invoices.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: '280px', justifyContent: 'flex-end' }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  style={{ maxWidth: '280px', fontSize: '0.82rem' }}
+                  placeholder="/logo.png or image URL"
+                  value={companySettings.logo_url || ''}
+                  onChange={(e) => setCompanySettings({ ...companySettings, logo_url: e.target.value })}
+                />
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setCompanySettings({ ...companySettings, logo_url: '/logo.png' })}
+                  title="Reset to New Luxury Billora Logo"
+                  style={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+                >
+                  ✨ Billora Logo
+                </button>
+              </div>
+            </div>
+
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
               <div className="form-group">
                 <label className="form-label" style={{ fontWeight: 700, color: '#1e293b' }}>Client Enterprise Name *</label>

@@ -150,6 +150,7 @@ class CompanySettingsUpdate(BaseModel):
     currency_symbol: Optional[str] = "₹"
     default_tax_rate: Optional[float] = 18.0
     payment_terms: Optional[str] = "Net 30 Days"
+    logo_url: Optional[str] = "/logo.png"
 
 # --- USERS & ROLES MANAGEMENT ---
 @router.get("/users")
@@ -243,13 +244,14 @@ def update_company_settings(payload: CompanySettingsUpdate):
             company_name = ?, business_type = ?, tagline = ?,
             phone = ?, email = ?, address = ?, gstin = ?,
             invoice_prefix = ?, purchase_prefix = ?, currency_symbol = ?,
-            default_tax_rate = ?, payment_terms = ?,
+            default_tax_rate = ?, payment_terms = ?, logo_url = ?,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = 1
     """, (
         payload.company_name.strip(), payload.business_type or "", payload.tagline or "",
         payload.phone or "", payload.email or "", payload.address or "", payload.gstin or "",
         payload.invoice_prefix or "BIL26-27 ", payload.purchase_prefix or "PUR-BIL-",
-        payload.currency_symbol or "₹", payload.default_tax_rate or 18.0, payload.payment_terms or "Net 30 Days"
+        payload.currency_symbol or "₹", payload.default_tax_rate or 18.0, payload.payment_terms or "Net 30 Days",
+        payload.logo_url or "/logo.png"
     ))
     return query_one("SELECT * FROM settings WHERE id = 1;")

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, AlertCircle, History, Sliders, Search, Plus, X, Check } from 'lucide-react';
+import { Layers, AlertCircle, History, Sliders, Search, Plus, X, Check, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
+import ConfirmModal from './ConfirmModal';
+import Loader from './Loader';
 
 export default function StockView({ products, currency = '₹', onRefresh }) {
   const todayStr = new Date().toISOString().split('T')[0];
@@ -13,6 +15,23 @@ export default function StockView({ products, currency = '₹', onRefresh }) {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Deletion state
+  const [deleteModalStock, setDeleteModalStock] = useState(null);
+  const [isDeletingStock, setIsDeletingStock] = useState(false);
+
+  // Add Stock Item Modal
+  const [addStockModalOpen, setAddStockModalOpen] = useState(false);
+  const [newStockName, setNewStockName] = useState('');
+  const [newStockCode, setNewStockCode] = useState('');
+  const [newStockCategory, setNewStockCategory] = useState('Granite');
+  const [newStockUnit, setNewStockUnit] = useState('sqft');
+  const [newStockOpening, setNewStockOpening] = useState(100);
+  const [newStockPurchasePrice, setNewStockPurchasePrice] = useState('');
+  const [newStockSellingPrice, setNewStockSellingPrice] = useState('');
+  const [newStockMinStock, setNewStockMinStock] = useState(25);
+  const [newStockError, setNewStockError] = useState(null);
+  const [newStockSaving, setNewStockSaving] = useState(false);
+
   // Adjustment Modal
   const [adjModalOpen, setAdjModalOpen] = useState(false);
   const [adjProductId, setAdjProductId] = useState('');
@@ -20,17 +39,18 @@ export default function StockView({ products, currency = '₹', onRefresh }) {
   const [adjDate, setAdjDate] = useState(todayStr);
   const [adjReason, setAdjReason] = useState('Physical count audit difference');
   const [adjError, setAdjError] = useState(null);
+  const [adjSaving, setAdjSaving] = useState(false);
 
   const formatMoney = (val) => `${currency} ${(Number(val) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/-`;
 
   const loadStockData = () => {
     setLoading(true);
     Promise.all([
-      api.getStockSummary(),
-      api.getLowStockReport()
+      api.getStockSummary().catch(() => []),
+      api.getLowStockReport().catch(() => [])
     ]).then(([sum, low]) => {
-      setSummaryData(sum);
-      setLowStockData(low);
+      setSummaryData(Array.isArray(sum) ? sum : []);
+      setLowStockData(Array.isArray(low) ? low : []);
     }).catch(err => console.error(err))
       .finally(() => setLoading(false));
   };
@@ -47,8 +67,9 @@ export default function StockView({ products, currency = '₹', onRefresh }) {
     }
   }, [selectedProductId]);
 
-  const handleOpenAdjustment = () => {
-    setAdjProductId(products && products.length > 0 ? products[0].id : '');
+  const handleOpenAdjustment = (productId = null) => {
+    const defaultPid = productId || (products && products.length > 0 ? products[0].id : (summaryData[0]?.id || ''));
+    setAdjProductId(defaultPid);
     setAdjQty('');
     setAdjDate(todayStr);
     setAdjReason('Physical count audit difference');
@@ -65,6 +86,7 @@ export default function StockView({ products, currency = '₹', onRefresh }) {
       return;
     }
 
+    setAdjSaving(true);
     try {
       await api.addStockAdjustment({
         product_id: Number(adjProductId),
@@ -77,9 +99,74 @@ export default function StockView({ products, currency = '₹', onRefresh }) {
       if (selectedProductId === Number(adjProductId)) {
         api.getStockLedger(selectedProductId).then(setLedgerData);
       }
-      onRefresh();
+      if (onRefresh) onRefresh();
     } catch (err) {
-      setAdjError(err.message);
+      setAdjError(err.message || 'Failed to apply adjustment');
+    } finally {
+      setAdjSaving(false);
+    }
+  };
+
+  const handleOpenAddStock = () => {
+    setNewStockName('');
+    setNewStockCode('');
+    setNewStockCategory('Granite');
+    setNewStockUnit('sqft');
+    setNewStockOpening(100);
+    setNewStockPurchasePrice('');
+    setNewStockSellingPrice('');
+    setNewStockMinStock(25);
+    setNewStockError(null);
+    setAddStockModalOpen(true);
+  };
+
+  const handleSaveNewStock = async (e) => {
+    e.preventDefault();
+    if (!newStockName.trim()) {
+      setNewStockError('Please provide stone item name.');
+      return;
+    }
+    setNewStockSaving(true);
+    setNewStockError(null);
+    try {
+      await api.createProduct({
+        name: newStockName.trim(),
+        code: newStockCode.trim() || undefined,
+        category: newStockCategory,
+        unit: newStockUnit,
+        opening_stock: parseFloat(newStockOpening) || 0,
+        current_stock: parseFloat(newStockOpening) || 0,
+        purchase_price: parseFloat(newStockPurchasePrice) || 0,
+        selling_price: parseFloat(newStockSellingPrice) || 0,
+        min_stock: parseFloat(newStockMinStock) || 10,
+        tax_percent: 18.0
+      });
+      setAddStockModalOpen(false);
+      loadStockData();
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      setNewStockError(err.message || 'Failed to create stock item');
+    } finally {
+      setNewStockSaving(false);
+    }
+  };
+
+  const handleDeleteStockClick = (s) => {
+    setDeleteModalStock(s);
+  };
+
+  const handleConfirmDeleteStock = async () => {
+    if (!deleteModalStock) return;
+    setIsDeletingStock(true);
+    try {
+      await api.deleteProduct(deleteModalStock.id);
+      setDeleteModalStock(null);
+      loadStockData();
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      alert(err.message || 'Cannot delete item: linked to existing transactions or damages.');
+    } finally {
+      setIsDeletingStock(false);
     }
   };
 
@@ -107,9 +194,13 @@ export default function StockView({ products, currency = '₹', onRefresh }) {
               {formatMoney(totalInventoryValue)}
             </div>
           </div>
-          <button className="btn btn-secondary" onClick={handleOpenAdjustment}>
+          <button className="btn btn-primary" onClick={handleOpenAddStock}>
+            <Plus size={16} />
+            <span>Add Stock Item</span>
+          </button>
+          <button className="btn btn-secondary" onClick={() => handleOpenAdjustment()}>
             <Sliders size={16} />
-            <span>Stock Adjustment</span>
+            <span>Stock Inward / Adjust</span>
           </button>
         </div>
       </div>
@@ -149,20 +240,27 @@ export default function StockView({ products, currency = '₹', onRefresh }) {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Product / Code</th>
+                  <th>Stone / Product</th>
                   <th>Category</th>
                   <th>Unit</th>
                   <th>Opening</th>
-                  <th>Purchased (+)</th>
-                  <th>Sold (−)</th>
-                  <th>Damaged (−)</th>
-                  <th>Adjusted (±)</th>
+                  <th>Purchased</th>
+                  <th>Sold</th>
+                  <th>Damaged</th>
+                  <th>Adjusted</th>
                   <th>Current Stock</th>
                   <th style={{ textAlign: 'right' }}>Stock Value</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredSummary && filteredSummary.length > 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan="11" style={{ padding: '3.5rem 1rem' }}>
+                      <Loader message="Updating Stone Inventory & Stock Ledger..." subMessage="Calculating live Sq.Ft. counts and stock movements" />
+                    </td>
+                  </tr>
+                ) : filteredSummary && filteredSummary.length > 0 ? (
                   filteredSummary.map((s) => (
                     <tr key={s.id} style={{ background: s.is_low_stock ? 'rgba(239, 68, 68, 0.04)' : undefined }}>
                       <td>
@@ -193,12 +291,39 @@ export default function StockView({ products, currency = '₹', onRefresh }) {
                       <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--success)' }}>
                         {formatMoney(s.stock_value)}
                       </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: '4px' }}>
+                          <button 
+                            className="btn btn-sm btn-secondary" 
+                            onClick={() => handleOpenAdjustment(s.id)}
+                            title="Adjust Stock Qty"
+                            style={{ padding: '4px 8px', fontSize: '0.74rem' }}
+                          >
+                            <Sliders size={12} />
+                          </button>
+                          <button 
+                            className="btn btn-sm btn-secondary" 
+                            onClick={() => { setSelectedProductId(s.id); setActiveTab('ledger'); }}
+                            title="View Movement Ledger"
+                            style={{ padding: '4px 8px', fontSize: '0.74rem' }}
+                          >
+                            <History size={12} />
+                          </button>
+                          <button 
+                            className="btn btn-sm btn-danger-outline" 
+                            onClick={() => handleDeleteStockClick(s)}
+                            title="Delete Stone Item"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="10" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                      No inventory records found.
+                    <td colSpan="11" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                      No inventory records found. Click "Add Stock Item" above to register stone slabs.
                     </td>
                   </tr>
                 )}
@@ -228,6 +353,7 @@ export default function StockView({ products, currency = '₹', onRefresh }) {
                   <th>Current Stock</th>
                   <th>Minimum Stock</th>
                   <th>Shortfall / Reorder Needed</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -243,11 +369,20 @@ export default function StockView({ products, currency = '₹', onRefresh }) {
                       <td style={{ fontWeight: 700, color: '#fbbf24' }}>
                         Need {ls.reorder_needed} {ls.unit}
                       </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button 
+                          className="btn btn-sm btn-primary" 
+                          onClick={() => handleOpenAdjustment(ls.id)}
+                          style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                        >
+                          + Inward Stock
+                        </button>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" style={{ textAlign: 'center', padding: '3rem', color: 'var(--success)' }}>
+                    <td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--success)' }}>
                       ✓ All stone items have healthy inventory above minimum stock limits!
                     </td>
                   </tr>
@@ -322,12 +457,140 @@ export default function StockView({ products, currency = '₹', onRefresh }) {
         </div>
       )}
 
-      {/* Manual Stock Adjustment Modal */}
+      {/* Add Stock Item Modal */}
+      {addStockModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-container" style={{ maxWidth: '520px' }}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Plus size={18} color="#38bdf8" />
+                <h3>Add New Stock Item</h3>
+              </div>
+              <button className="modal-close-btn" onClick={() => setAddStockModalOpen(false)}><X size={20} /></button>
+            </div>
+            <form onSubmit={handleSaveNewStock}>
+              <div className="modal-body">
+                {newStockError && (
+                  <div style={{ padding: '0.75rem', background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: 'var(--danger)', borderRadius: 'var(--radius-sm)', marginBottom: '1rem', fontSize: '0.82rem' }}>
+                    {newStockError}
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label className="form-label">Stone / Product Name *</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="e.g. Kashmiri White Granite 18mm Slab" 
+                    value={newStockName} 
+                    onChange={(e) => setNewStockName(e.target.value)} 
+                    required 
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Item Code / SKU</label>
+                    <input 
+                      type="text" 
+                      className="form-input font-mono" 
+                      placeholder="BIL-GRA-005" 
+                      value={newStockCode} 
+                      onChange={(e) => setNewStockCode(e.target.value)} 
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Category *</label>
+                    <select className="form-select" value={newStockCategory} onChange={(e) => setNewStockCategory(e.target.value)}>
+                      <option value="Granite">Granite</option>
+                      <option value="Marble">Marble</option>
+                      <option value="Tiles">Tiles</option>
+                      <option value="Natural Stone">Natural Stone</option>
+                      <option value="Adhesives & Chemicals">Adhesives & Chemicals</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Measurement Unit *</label>
+                    <select className="form-select" value={newStockUnit} onChange={(e) => setNewStockUnit(e.target.value)}>
+                      <option value="sqft">Square Feet (sqft)</option>
+                      <option value="sqm">Square Meter (sqm)</option>
+                      <option value="piece">Piece / Slab (piece)</option>
+                      <option value="box">Box / Bag (box)</option>
+                      <option value="ton">Metric Ton (ton)</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Initial Stock *</label>
+                    <input 
+                      type="number" 
+                      step="any" 
+                      className="form-input" 
+                      value={newStockOpening} 
+                      onChange={(e) => setNewStockOpening(e.target.value)} 
+                      required 
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Purchase Cost (₹)</label>
+                    <input 
+                      type="number" 
+                      step="any" 
+                      className="form-input" 
+                      placeholder="e.g. 120" 
+                      value={newStockPurchasePrice} 
+                      onChange={(e) => setNewStockPurchasePrice(e.target.value)} 
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Selling Price (₹)</label>
+                    <input 
+                      type="number" 
+                      step="any" 
+                      className="form-input" 
+                      placeholder="e.g. 165" 
+                      value={newStockSellingPrice} 
+                      onChange={(e) => setNewStockSellingPrice(e.target.value)} 
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Minimum Reorder Alert Level</label>
+                  <input 
+                    type="number" 
+                    step="any" 
+                    className="form-input" 
+                    value={newStockMinStock} 
+                    onChange={(e) => setNewStockMinStock(e.target.value)} 
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setAddStockModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={newStockSaving}>
+                  {newStockSaving ? 'Saving...' : 'Create Stock Item'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Manual Stock Adjustment / Inward Modal */}
       {adjModalOpen && (
         <div className="modal-overlay">
           <div className="modal-container" style={{ maxWidth: '480px' }}>
             <div className="modal-header">
-              <h3>Stock Adjustment (Physical Count Correction)</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sliders size={18} color="#38bdf8" />
+                <h3>Stock Inward & Physical Adjustment</h3>
+              </div>
               <button className="modal-close-btn" onClick={() => setAdjModalOpen(false)}><X size={20} /></button>
             </div>
             <form onSubmit={handleSaveAdjustment}>
@@ -338,7 +601,7 @@ export default function StockView({ products, currency = '₹', onRefresh }) {
                   </div>
                 )}
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                  Use this to adjust stock after physical quarry/yard auditing. Creates an adjustment audit trail.
+                  Record stock inward (+), quarry receipt, or physical count adjustments. An audit movement is permanently registered.
                 </p>
 
                 <div className="form-group">
@@ -353,7 +616,7 @@ export default function StockView({ products, currency = '₹', onRefresh }) {
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Adjustment Qty (+ or -) *</label>
-                    <input type="number" step="any" className="form-input" placeholder="+10 or -5" value={adjQty} onChange={(e) => setAdjQty(e.target.value)} required />
+                    <input type="number" step="any" className="form-input" placeholder="+50 or -5" value={adjQty} onChange={(e) => setAdjQty(e.target.value)} required />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Audit Date *</label>
@@ -361,19 +624,56 @@ export default function StockView({ products, currency = '₹', onRefresh }) {
                   </div>
                 </div>
 
+                {/* Quick Presets */}
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '1rem' }}>
+                  <button type="button" className="btn btn-sm btn-secondary" onClick={() => setAdjQty('10')}>+10</button>
+                  <button type="button" className="btn btn-sm btn-secondary" onClick={() => setAdjQty('50')}>+50</button>
+                  <button type="button" className="btn btn-sm btn-secondary" onClick={() => setAdjQty('100')}>+100</button>
+                  <button type="button" className="btn btn-sm btn-secondary" onClick={() => setAdjQty('-5')}>-5 Shortage</button>
+                </div>
+
                 <div className="form-group">
-                  <label className="form-label">Reason / Justification *</label>
-                  <input type="text" className="form-input" placeholder="e.g. Month-end physical verification difference" value={adjReason} onChange={(e) => setAdjReason(e.target.value)} required />
+                  <label className="form-label">Reason / Narration *</label>
+                  <input type="text" className="form-input" placeholder="e.g. Quarry delivery inward / Physical count difference" value={adjReason} onChange={(e) => setAdjReason(e.target.value)} required />
                 </div>
               </div>
               <div className="modal-footer">
                 <button type="button" className="btn btn-secondary" onClick={() => setAdjModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Apply Adjustment</button>
+                <button type="submit" className="btn btn-primary" disabled={adjSaving}>
+                  {adjSaving ? 'Applying...' : 'Apply Stock Change'}
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Confirm Delete Stock Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deleteModalStock)}
+        title="Delete Stone Item"
+        message={deleteModalStock ? ("Are you sure you want to remove " + deleteModalStock.name + " from stock catalog? This will delete the item or mark it inactive if linked to prior sales/purchases.") : ""}
+        confirmText="Delete Item"
+        isLoading={isDeletingStock}
+        onCancel={() => !isDeletingStock && setDeleteModalStock(null)}
+        onConfirm={handleConfirmDeleteStock}
+        itemDetails={deleteModalStock ? (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ color: '#94a3b8' }}>Stone:</span>
+              <strong style={{ color: '#f8fafc' }}>{deleteModalStock.name}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ color: '#94a3b8' }}>Current Stock:</span>
+              <strong style={{ color: '#38bdf8' }}>{deleteModalStock.current_stock} {deleteModalStock.unit}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+              <span style={{ color: '#94a3b8' }}>Stock Valuation:</span>
+              <strong style={{ color: '#34d399' }}>{formatMoney(deleteModalStock.stock_value)}</strong>
+            </div>
+          </div>
+        ) : null}
+      />
     </div>
   );
 }

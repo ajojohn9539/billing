@@ -41,6 +41,7 @@ class SettingsUpdate(BaseModel):
     currency_symbol: str = "₹"
     default_tax_rate: float = 18.0
     payment_terms: Optional[str] = ""
+    logo_url: Optional[str] = "/logo.png"
 
 # --- Bank Endpoints ---
 @router.get("/bank-accounts")
@@ -111,13 +112,13 @@ def update_settings(payload: SettingsUpdate):
             company_name = ?, business_type = ?, tagline = ?,
             phone = ?, email = ?, address = ?, gstin = ?,
             invoice_prefix = ?, purchase_prefix = ?, currency_symbol = ?,
-            default_tax_rate = ?, payment_terms = ?
+            default_tax_rate = ?, payment_terms = ?, logo_url = ?
         WHERE id = 1
     """, (
         payload.company_name, payload.business_type, payload.tagline,
         payload.phone, payload.email, payload.address, payload.gstin,
         payload.invoice_prefix, payload.purchase_prefix, payload.currency_symbol,
-        payload.default_tax_rate, payload.payment_terms
+        payload.default_tax_rate, payload.payment_terms, payload.logo_url or "/logo.png"
     ))
     return query_one("SELECT * FROM settings WHERE id = 1")
 

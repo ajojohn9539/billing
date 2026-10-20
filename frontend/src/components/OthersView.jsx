@@ -47,6 +47,7 @@ export default function OthersView({ settings, currency = '₹', onRefresh }) {
     currency_symbol: '₹',
     default_tax_rate: 18.0,
     payment_terms: 'Goods once sold cannot be returned without inspection.',
+    logo_url: '/logo.png',
   });
   const [settingsSaved, setSettingsSaved] = useState(false);
 
@@ -366,6 +367,69 @@ export default function OthersView({ settings, currency = '₹', onRefresh }) {
             </div>
           )}
           <form onSubmit={handleSettingsSubmit}>
+            {/* Brand Logo Configuration */}
+            <div style={{
+              background: 'rgba(15, 23, 42, 0.65)',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
+              borderRadius: '12px',
+              padding: '16px 20px',
+              marginBottom: '20px',
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '16px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '12px',
+                  padding: '2px',
+                  background: 'linear-gradient(135deg, #0284c7 0%, #10b981 100%)',
+                  boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <img 
+                    src={settingsForm.logo_url || '/logo.png'} 
+                    alt="Current Logo" 
+                    style={{ width: '100%', height: '100%', borderRadius: '10px', objectFit: 'cover' }}
+                    onError={(e) => { e.currentTarget.src = '/logo.png'; }}
+                  />
+                </div>
+                <div>
+                  <h4 style={{ margin: '0 0 2px 0', fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc' }}>
+                    Company Brand Logo
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8' }}>
+                    Changes dynamically across navbar, dashboard, and printed invoices.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '260px', justifyContent: 'flex-end' }}>
+                <input
+                  type="text"
+                  className="form-input"
+                  style={{ maxWidth: '240px', fontSize: '0.82rem' }}
+                  placeholder="/logo.png or image URL"
+                  value={settingsForm.logo_url || ''}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, logo_url: e.target.value })}
+                />
+                <button
+                  type="button"
+                  className="btn btn-sm btn-secondary"
+                  onClick={() => setSettingsForm({ ...settingsForm, logo_url: '/logo.png' })}
+                  style={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+                >
+                  ✨ Billora Logo
+                </button>
+              </div>
+            </div>
+
+
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Shop Name *</label>

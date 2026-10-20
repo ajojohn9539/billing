@@ -19,6 +19,8 @@ export default function DamageEntryView({ products, currency = '₹', onRefresh 
   const [reason, setReason] = useState('Broken in transit');
   const [remarks, setRemarks] = useState('');
   const [formError, setFormError] = useState(null);
+  const [deleteModalDamage, setDeleteModalDamage] = useState(null);
+  const [isDeletingDamage, setIsDeletingDamage] = useState(false);
 
   const formatMoney = (val) => `${currency} ${(Number(val) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/-`;
 

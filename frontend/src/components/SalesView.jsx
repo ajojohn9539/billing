@@ -56,7 +56,7 @@ function numberToWordsINR(num) {
   return 'Rupees ' + words.trim() + ' Only';
 }
 
-export default function SalesView({ sales, customers, products, currency = '₹', onRefresh }) {
+export default function SalesView({ sales, customers, products, currency = '₹', settings = null, onRefresh }) {
   const todayStr = new Date().toISOString().split('T')[0];
 
   const [search, setSearch] = useState('');
@@ -797,7 +797,7 @@ export default function SalesView({ sales, customers, products, currency = '₹'
                 <div className="jr-bill-header">
                   <div className="jr-bill-brand-left">
                     <img 
-                      src="/logo.png" 
+                      src={settings?.logo_url || "/logo.png"} 
                       alt="JR Logo" 
                       className="jr-bill-logo-circle" 
                       style={{ width: '54px', height: '54px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #0284c7' }} 
