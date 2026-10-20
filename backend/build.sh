@@ -15,6 +15,11 @@ if command -v npm &> /dev/null; then
     npm install
     npm run build
     cd "$DIR"
+    mkdir -p "$DIR/dist" "$DIR/build" "$DIR/../dist" "$DIR/../build"
+    cp -r "$DIR/../frontend/dist"/* "$DIR/dist/" 2>/dev/null || true
+    cp -r "$DIR/../frontend/dist"/* "$DIR/build/" 2>/dev/null || true
+    cp -r "$DIR/../frontend/dist"/* "$DIR/../dist/" 2>/dev/null || true
+    cp -r "$DIR/../frontend/dist"/* "$DIR/../build/" 2>/dev/null || true
 fi
 
 cd "$DIR"

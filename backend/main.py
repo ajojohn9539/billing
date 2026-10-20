@@ -131,13 +131,28 @@ def health_check():
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-DIST_DIR = BASE_DIR.parent / "frontend" / "dist"
-if DIST_DIR.exists() and (DIST_DIR / "index.html").exists():
-    app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")
+# Multi-candidate production build lookup (supports Render rootDir=backend, rootDir=., Vercel, Docker)
+DIST_DIR = None
+for candidate in [
+    BASE_DIR / "dist",
+    BASE_DIR / "build",
+    BASE_DIR.parent / "frontend" / "dist",
+    BASE_DIR.parent / "frontend" / "build",
+    BASE_DIR.parent / "dist",
+    BASE_DIR.parent / "build"
+]:
+    if candidate.exists() and (candidate / "index.html").exists():
+        DIST_DIR = candidate
+        break
+
+if DIST_DIR and (DIST_DIR / "index.html").exists():
+    assets_dir = DIST_DIR / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
-        if full_path.startswith("api/"):
+        if full_path.startswith("api/") or full_path == "docs" or full_path == "openapi.json":
             return None
         file_path = DIST_DIR / full_path
         if file_path.exists() and file_path.is_file():
