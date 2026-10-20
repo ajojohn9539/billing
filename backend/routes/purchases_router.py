@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from database import get_db, query_all, query_one, execute_insert, execute_update
+from database import get_db, query_all, query_one, execute_insert, execute_update, record_audit_log
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import date, datetime
@@ -226,6 +226,7 @@ def add_purchase_payment(purchase_id: int, payload: PurchasePaymentInput):
                 purchase["due"], payload.amount, purchase_id
             ))
 
+    record_audit_log("purchases", purchase_id, "CREATE", new_values={"invoice_no": payload.invoice_no, "total": grand_total, "supplier": supplier["name"]}, details=f"Inward Purchase #{payload.invoice_no} from {supplier['name']} ({grand_total})")
     return get_purchase(purchase_id)
 
 @router.delete("/{purchase_id}")

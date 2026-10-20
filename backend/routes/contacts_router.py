@@ -1,7 +1,7 @@
 import json
 from typing import Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, Query
-from database import query_all, query_one, execute_insert, execute_update
+from database import query_all, query_one, execute_insert, execute_update, record_audit_log
 from pydantic import BaseModel
 from typing import Optional
 
@@ -28,8 +28,11 @@ class ContactUpdate(ContactCreate):
     pass
 
 @router.get("")
-def list_contacts(type: str = Query(None), search: str = Query(None), status: str = Query(None)):
-    query = ["SELECT * FROM contacts WHERE deleted_at IS NULL"]
+def list_contacts(type: str = Query(None), search: str = Query(None), status: str = Query(None), include_deleted: bool = Query(False)):
+    if include_deleted:
+        query = ["SELECT * FROM contacts WHERE 1=1"]
+    else:
+        query = ["SELECT * FROM contacts WHERE deleted_at IS NULL"]
     params = []
 
     if type and type.lower() != 'all':
@@ -107,6 +110,7 @@ def create_contact(payload: ContactCreate):
         payload.opening_balance, payload.credit_limit, payload.notes or "", payload.status,
         c_fields_json
     ))
+    record_audit_log("contacts", new_id, "CREATE", new_values=payload.dict(), details=f"Created contact {payload.name.strip()} ({payload.type})")
     return get_contact(new_id)
 
 @router.put("/{contact_id}")
@@ -129,20 +133,34 @@ def update_contact(contact_id: int, payload: ContactUpdate):
         payload.gstin or "", payload.credit_limit, payload.notes or "", payload.status,
         c_fields_json, contact_id
     ))
+    record_audit_log("contacts", contact_id, "UPDATE", old_values=exists, new_values=payload.dict(), details=f"Updated contact {payload.name.strip()}")
     return get_contact(contact_id)
 
 @router.delete("/{contact_id}")
-def delete_contact(contact_id: int):
-    # Rule 3 in documentation: Blocked if the contact has purchases, sales, or daybook entries; mark Inactive instead.
+def delete_contact(contact_id: int, force_inactivate: bool = Query(False)):
+    contact = query_one("SELECT * FROM contacts WHERE id = ?", (contact_id,))
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
     s_cnt = query_one("SELECT COUNT(*) AS c FROM sales WHERE customer_id = ? AND deleted_at IS NULL", (contact_id,))
     p_cnt = query_one("SELECT COUNT(*) AS c FROM purchases WHERE supplier_id = ? AND deleted_at IS NULL", (contact_id,))
+    has_links = (s_cnt and s_cnt['c'] > 0) or (p_cnt and p_cnt['c'] > 0)
 
-    if (s_cnt and s_cnt['c'] > 0) or (p_cnt and p_cnt['c'] > 0):
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot delete contact linked to existing purchases or sales bills. Please mark status as 'Inactive' instead."
-        )
+    if has_links or force_inactivate:
+        execute_update("UPDATE contacts SET status = 'Inactive', updated_at = CURRENT_TIMESTAMP WHERE id = ?", (contact_id,))
+        record_audit_log("contacts", contact_id, "INACTIVATE", old_values=contact, new_values={"status": "Inactive"}, details=f"Set contact '{contact['name']}' to Inactive (linked to {s_cnt['c'] if s_cnt else 0} sales / {p_cnt['c'] if p_cnt else 0} purchases)")
+        return {"message": f"Contact '{contact['name']}' is linked to transactions and was marked as Inactive.", "id": contact_id, "action": "inactivated"}
 
-    # Soft delete
-    execute_update("UPDATE contacts SET deleted_at = CURRENT_TIMESTAMP, status = 'Inactive' WHERE id = ?", (contact_id,))
-    return {"message": "Contact soft-deleted successfully", "id": contact_id}
+    execute_update("UPDATE contacts SET deleted_at = CURRENT_TIMESTAMP, status = 'Inactive', updated_at = CURRENT_TIMESTAMP WHERE id = ?", (contact_id,))
+    record_audit_log("contacts", contact_id, "DELETE", old_values=contact, new_values={"deleted_at": "CURRENT_TIMESTAMP", "status": "Inactive"}, details=f"Soft-deleted contact '{contact['name']}'")
+    return {"message": f"Contact '{contact['name']}' soft-deleted successfully", "id": contact_id, "action": "deleted"}
+
+@router.post("/{contact_id}/restore")
+def restore_contact(contact_id: int):
+    contact = query_one("SELECT * FROM contacts WHERE id = ?", (contact_id,))
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    
+    execute_update("UPDATE contacts SET deleted_at = NULL, status = 'Active', updated_at = CURRENT_TIMESTAMP WHERE id = ?", (contact_id,))
+    record_audit_log("contacts", contact_id, "RESTORE", old_values=contact, new_values={"status": "Active", "deleted_at": None}, details=f"Restored contact '{contact['name']}' to Active")
+    return {"message": f"Contact '{contact['name']}' restored to Active successfully", "id": contact_id}

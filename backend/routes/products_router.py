@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from database import query_all, query_one, execute_insert, execute_update
+from database import query_all, query_one, execute_insert, execute_update, record_audit_log
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
@@ -198,17 +198,31 @@ def update_product(product_id: int, payload: ProductUpdate):
     return get_product(product_id)
 
 @router.delete("/{product_id}")
-def delete_product(product_id: int):
-    # Rule in documentation: only if product was never used in a purchase, sale or damage entry; otherwise mark Inactive.
+def delete_product(product_id: int, force_inactivate: bool = Query(False)):
+    prod = query_one("SELECT * FROM products WHERE id = ?", (product_id,))
+    if not prod:
+        raise HTTPException(status_code=404, detail="Product not found")
+
     p_cnt = query_one("SELECT COUNT(*) AS c FROM purchase_items WHERE product_id = ?", (product_id,))
     s_cnt = query_one("SELECT COUNT(*) AS c FROM sale_items WHERE product_id = ?", (product_id,))
     d_cnt = query_one("SELECT COUNT(*) AS c FROM damages WHERE product_id = ? AND deleted_at IS NULL", (product_id,))
+    has_links = (p_cnt and p_cnt['c'] > 0) or (s_cnt and s_cnt['c'] > 0) or (d_cnt and d_cnt['c'] > 0)
 
-    if (p_cnt and p_cnt['c'] > 0) or (s_cnt and s_cnt['c'] > 0) or (d_cnt and d_cnt['c'] > 0):
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot delete product linked to historical transactions or damage entries. Marked as Inactive instead."
-        )
+    if has_links or force_inactivate:
+        execute_update("UPDATE products SET status = 'Inactive', updated_at = CURRENT_TIMESTAMP WHERE id = ?", (product_id,))
+        record_audit_log("products", product_id, "INACTIVATE", old_values=prod, new_values={"status": "Inactive"}, details=f"Set product '{prod['name']}' to Inactive (linked to {p_cnt['c'] if p_cnt else 0} purchases / {s_cnt['c'] if s_cnt else 0} sales)")
+        return {"message": f"Product '{prod['name']}' is linked to transactions and was marked as Inactive.", "id": product_id, "action": "inactivated"}
 
-    execute_update("UPDATE products SET deleted_at = CURRENT_TIMESTAMP, status = 'Inactive' WHERE id = ?", (product_id,))
-    return {"message": "Product deleted successfully", "id": product_id}
+    execute_update("UPDATE products SET deleted_at = CURRENT_TIMESTAMP, status = 'Inactive', updated_at = CURRENT_TIMESTAMP WHERE id = ?", (product_id,))
+    record_audit_log("products", product_id, "DELETE", old_values=prod, new_values={"deleted_at": "CURRENT_TIMESTAMP", "status": "Inactive"}, details=f"Soft-deleted product '{prod['name']}'")
+    return {"message": f"Product '{prod['name']}' deleted successfully", "id": product_id, "action": "deleted"}
+
+@router.post("/{product_id}/restore")
+def restore_product(product_id: int):
+    prod = query_one("SELECT * FROM products WHERE id = ?", (product_id,))
+    if not prod:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    execute_update("UPDATE products SET deleted_at = NULL, status = 'Active', updated_at = CURRENT_TIMESTAMP WHERE id = ?", (product_id,))
+    record_audit_log("products", product_id, "RESTORE", old_values=prod, new_values={"status": "Active", "deleted_at": None}, details=f"Restored product '{prod['name']}' to Active")
+    return {"message": f"Product '{prod['name']}' restored to Active successfully", "id": product_id}

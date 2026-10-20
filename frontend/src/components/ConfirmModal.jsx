@@ -44,9 +44,10 @@ export default function ConfirmModal({
       onClick={!isLoading ? onCancel : undefined}
     >
       <div 
+        className="confirm-modal-box"
         style={{
-          background: 'linear-gradient(145deg, #0f172a 0%, #1e293b 100%)',
-          border: isDanger ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid rgba(56, 189, 248, 0.35)',
+          background: 'var(--bg-surface)',
+          border: isDanger ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid var(--border-subtle)',
           boxShadow: isDanger 
             ? '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 25px rgba(239, 68, 68, 0.15)'
             : '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 25px rgba(56, 189, 248, 0.15)',
@@ -64,7 +65,7 @@ export default function ConfirmModal({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+          borderBottom: '1px solid var(--border-subtle)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
@@ -76,15 +77,15 @@ export default function ConfirmModal({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: isDanger ? '#f87171' : '#38bdf8'
+              color: isDanger ? '#ef4444' : '#0284c7'
             }}>
               {isDanger ? <Trash2 size={20} /> : <AlertTriangle size={20} />}
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: '#f8fafc' }}>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-main)' }}>
                 {title}
               </h3>
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 Irreversible Action
               </span>
             </div>
@@ -95,7 +96,7 @@ export default function ConfirmModal({
             style={{
               background: 'transparent',
               border: 'none',
-              color: '#64748b',
+              color: 'var(--text-muted)',
               cursor: isLoading ? 'not-allowed' : 'pointer',
               padding: '6px',
               borderRadius: '6px',
@@ -110,18 +111,19 @@ export default function ConfirmModal({
 
         {/* Body */}
         <div style={{ padding: '22px' }}>
-          <p style={{ margin: '0 0 16px 0', fontSize: '0.92rem', color: '#cbd5e1', lineHeight: '1.5' }}>
+          <p style={{ margin: '0 0 16px 0', fontSize: '0.92rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
             {message}
           </p>
 
           {itemDetails && (
             <div style={{
-              background: 'rgba(15, 23, 42, 0.7)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-subtle)',
               borderRadius: '8px',
               padding: '12px 14px',
               marginBottom: '16px',
-              fontSize: '0.85rem'
+              fontSize: '0.85rem',
+              color: 'var(--text-main)'
             }}>
               {itemDetails}
             </div>

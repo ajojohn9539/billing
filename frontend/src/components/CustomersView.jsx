@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Users, 
+  RotateCcw, 
   Search, 
   Plus, 
   Edit3, 
@@ -25,6 +26,7 @@ export default function CustomersView({
   onSelectCustomerInvoices 
 }) {
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState(null);
   const [deleteModalContact, setDeleteModalContact] = useState(null);
@@ -150,6 +152,15 @@ export default function CustomersView({
     setDeleteModalContact(c);
   };
 
+  const handleRestoreContact = async (c) => {
+    try {
+      await api.restoreContact(c.id);
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      alert(err.message || 'Failed to restore contact');
+    }
+  };
+
   const handleConfirmDeleteContact = async () => {
     if (!deleteModalContact) return;
     setIsDeletingContact(true);
@@ -165,6 +176,8 @@ export default function CustomersView({
   };
 
   const filtered = customers.filter(c => {
+    if (statusFilter === 'active' && c.status === 'Inactive') return false;
+    if (statusFilter === 'inactive' && c.status !== 'Inactive') return false;
     const q = search.toLowerCase();
     const nameMatch = (c.name || '').toLowerCase().includes(q);
     const compMatch = (c.company || c.company_name || '').toLowerCase().includes(q);
@@ -190,20 +203,49 @@ export default function CustomersView({
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="filter-bar">
-        <div className="search-input-wrap" style={{ width: '320px' }}>
-          <Search size={16} />
-          <input 
-            type="text" 
-            className="search-input" 
-            placeholder="Search by client name, GSTIN, route..." 
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      {/* Search & Status Filters */}
+      <div className="filter-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div className="search-input-wrap" style={{ width: '300px' }}>
+            <Search size={16} />
+            <input 
+              type="text" 
+              className="search-input" 
+              placeholder="Search by client name, GSTIN, route..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          <div style={{ display: 'inline-flex', gap: '0.35rem', background: 'var(--bg-surface)', padding: '0.25rem', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+            {[
+              { id: 'all', label: 'All', count: customers.length },
+              { id: 'active', label: 'Active', count: customers.filter(c => c.status !== 'Inactive').length },
+              { id: 'inactive', label: 'Inactive / Deleted', count: customers.filter(c => c.status === 'Inactive').length },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setStatusFilter(tab.id)}
+                style={{
+                  padding: '0.3rem 0.65rem',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: statusFilter === tab.id ? 'var(--primary-light)' : 'transparent',
+                  color: statusFilter === tab.id ? 'var(--text-main)' : 'var(--text-muted)',
+                  fontSize: '0.8rem',
+                  fontWeight: statusFilter === tab.id ? 700 : 500,
+                  cursor: 'pointer'
+                }}
+              >
+                <span>{tab.label}</span>
+                <span style={{ marginLeft: '4px', opacity: 0.75, fontSize: '0.72rem' }}>({tab.count})</span>
+              </button>
+            ))}
+          </div>
         </div>
+
         <span style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>
-          Showing {filtered.length} active client profiles
+          Showing {filtered.length} profiles
         </span>
       </div>
 
@@ -237,7 +279,7 @@ export default function CustomersView({
                   return (
                     <tr key={c.id}>
                       <td>
-                        <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.94rem' }}>{c.name}</div>
+                        <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.94rem' }}>{c.name}</div>
                         {(c.company || c.company_name) && (
                           <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{c.company || c.company_name}</div>
                         )}
@@ -256,7 +298,7 @@ export default function CustomersView({
                           </div>
                         )}
                         {c.phone && (
-                          <div style={{ fontSize: '0.8rem', color: '#334155', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px', fontWeight: 600 }}>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px', fontWeight: 600 }}>
                             <Phone size={12} style={{ color: '#0284c7' }} />
                             <span>{c.phone}</span>
                           </div>
@@ -274,12 +316,12 @@ export default function CustomersView({
                               </span>
                             )}
                             {cFields.contractor_name && (
-                              <span style={{ background: '#f8fafc', color: '#334155', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', border: '1px solid #e2e8f0' }}>
+                              <span style={{ background: '#f8fafc', color: 'var(--text-muted)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', border: '1px solid #e2e8f0' }}>
                                 Arch: {cFields.contractor_name}
                               </span>
                             )}
                             {cFields.alternate_phone && (
-                              <span style={{ background: '#f8fafc', color: '#334155', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', border: '1px solid #e2e8f0' }}>
+                              <span style={{ background: '#f8fafc', color: 'var(--text-muted)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', border: '1px solid #e2e8f0' }}>
                                 Alt: {cFields.alternate_phone}
                               </span>
                             )}
@@ -324,13 +366,24 @@ export default function CustomersView({
                           >
                             <Edit3 size={14} />
                           </button>
-                          <button 
-                            className="btn btn-sm btn-danger-outline" 
-                            onClick={() => handleDeleteClick(c)}
-                            title="Delete Customer"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          {c.status === 'Inactive' ? (
+                            <button
+                              className="btn btn-sm btn-secondary"
+                              onClick={() => handleRestoreContact(c)}
+                              title="Restore Contact to Active"
+                              style={{ color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)' }}
+                            >
+                              <RotateCcw size={14} />
+                            </button>
+                          ) : (
+                            <button 
+                              className="btn btn-sm btn-danger-outline" 
+                              onClick={() => handleDeleteClick(c)}
+                              title="Delete or Set Inactive"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -479,7 +532,7 @@ export default function CustomersView({
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                       {dynamicFields.map((f) => (
                         <div key={f.id} className="form-group" style={{ marginBottom: 0 }}>
-                          <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 600, color: '#334155' }}>
+                          <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)' }}>
                             {f.field_label} {f.is_required && <span style={{ color: '#ef4444' }}>*</span>}
                           </label>
 

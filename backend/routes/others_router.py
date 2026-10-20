@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from database import get_db, query_all, query_one, execute_insert, execute_update
+from database import get_db, query_all, query_one, execute_insert, execute_update, record_audit_log
 from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import date, datetime
@@ -78,6 +78,7 @@ def create_bank_account(payload: BankAccountCreate):
         payload.opening_balance,
         curr_balance
     ))
+    record_audit_log("bank_accounts", new_id, "CREATE", new_values=payload.dict(), details=f"Created Bank Account '{payload.name}' ({payload.bank_name}) with opening {payload.opening_balance}")
     return query_one("SELECT * FROM bank_accounts WHERE id = ?", (new_id,))
 
 @router.put("/bank-accounts/{account_id}")
@@ -101,6 +102,7 @@ def update_bank_account(account_id: int, payload: BankAccountUpdate):
         WHERE id = ?
     """, (name, account_number, bank_name, branch, ifsc, account_type, opening_balance, current_balance, account_id))
 
+    record_audit_log("bank_accounts", account_id, "UPDATE", old_values=existing, new_values=payload.dict(), details=f"Updated Bank Account '{name}' - Opening: {opening_balance}, Current: {current_balance}")
     return query_one("SELECT * FROM bank_accounts WHERE id = ?", (account_id,))
 
 @router.delete("/bank-accounts/{account_id}")
@@ -117,6 +119,7 @@ def delete_bank_account(account_id: int):
         )
 
     execute_update("DELETE FROM bank_accounts WHERE id = ?", (account_id,))
+    record_audit_log("bank_accounts", account_id, "DELETE", old_values=existing, details=f"Deleted Bank Account '{existing['name']}'")
     return {"message": "Bank account deleted successfully", "id": account_id}
 
 @router.post("/bank-transfer")
@@ -148,6 +151,7 @@ def transfer_funds(payload: BankTransferCreate):
                 VALUES (%s, %s, 'inward', 'Bank', %s, %s, %s, 'bank_transfer')
             """, (payload.date, datetime.now().strftime("%H:%M:%S"), payload.to_account_id, f"Transfer from {from_acc['name']}: {payload.narration}", payload.amount))
 
+    record_audit_log("bank_accounts", payload.from_account_id, "TRANSFER", details=f"Transferred {payload.amount} from '{from_acc['name']}' to '{to_acc['name']}': {payload.narration}")
     return {"message": "Transfer completed successfully", "amount": payload.amount}
 
 # --- Users & Roles ---

@@ -222,7 +222,30 @@ export const api = {
   // 13. Company & Site Details (Sudo / Admin)
   getCompanySettings: () => request('/admin/company-settings'),
   updateCompanySettings: (data) => request('/admin/company-settings', { method: 'PUT', body: JSON.stringify(data) }),
-};
 
+  // 14. Inactive & Deleted Archives & Action History Audit Trail
+  getArchivesSummary: () => request('/archives/summary'),
+  getArchivedContacts: (filter = 'all') => request(`/archives/contacts?filter=${filter}`),
+  restoreContact: (id) => request(`/archives/contacts/${id}/restore`, { method: 'POST' }),
+  getArchivedProducts: (filter = 'all') => request(`/archives/products?filter=${filter}`),
+  restoreProduct: (id) => request(`/archives/products/${id}/restore`, { method: 'POST' }),
+  getArchivedSales: () => request('/archives/sales'),
+  restoreSale: (id) => request(`/archives/sales/${id}/restore`, { method: 'POST' }),
+  getArchivedPurchases: () => request('/archives/purchases'),
+  restorePurchase: (id) => request(`/archives/purchases/${id}/restore`, { method: 'POST' }),
+  getArchivedDaybook: () => request('/archives/daybook'),
+  restoreDaybook: (id) => request(`/archives/daybook/${id}/restore`, { method: 'POST' }),
+  getArchivedDamages: () => request('/archives/damages'),
+  restoreDamage: (id) => request(`/archives/damages/${id}/restore`, { method: 'POST' }),
+  getAuditLogs: (params = {}) => {
+    const sp = new URLSearchParams();
+    if (params.table_name) sp.append('table_name', params.table_name);
+    if (params.action) sp.append('action', params.action);
+    if (params.limit) sp.append('limit', params.limit);
+    if (params.offset) sp.append('offset', params.offset);
+    const qs = sp.toString();
+    return request(`/archives/audit-logs${qs ? '?' + qs : ''}`);
+  },
+};
 
 export default api;

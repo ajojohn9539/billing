@@ -56,7 +56,7 @@ export default function DashboardView({
       {/* 1. Welcome Executive Hero Banner */}
       <div style={{
         background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.9) 100%)',
-        border: '1px solid rgba(56, 189, 248, 0.2)',
+        border: '1px solid rgba(56, 189, 248, 0.25)',
         borderRadius: '16px',
         padding: '24px 28px',
         marginBottom: '24px',
@@ -65,7 +65,7 @@ export default function DashboardView({
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: '20px',
-        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35)'
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <div style={{
@@ -96,8 +96,8 @@ export default function DashboardView({
             <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', margin: 0, letterSpacing: '-0.02em' }}>
               {companyName}
             </h2>
-            <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: '4px 0 0 0' }}>
-              {settings?.tagline || 'Smart GST Billing & Stone Inventory ERP System'} • GSTIN: <strong style={{ color: '#cbd5e1' }}>{settings?.gstin || '32FGZPR5431L1ZL'}</strong>
+            <p style={{ color: '#cbd5e1', fontSize: '0.88rem', margin: '4px 0 0 0' }}>
+              {settings?.tagline || 'Smart GST Billing & Stone Inventory ERP System'} • GSTIN: <strong style={{ color: '#38bdf8' }}>{settings?.gstin || '32FGZPR5431L1ZL'}</strong>
             </p>
           </div>
         </div>
@@ -107,8 +107,8 @@ export default function DashboardView({
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
-            background: 'rgba(2, 132, 199, 0.1)',
-            border: '1px solid rgba(56, 189, 248, 0.25)',
+            background: 'rgba(2, 132, 199, 0.15)',
+            border: '1px solid rgba(56, 189, 248, 0.35)',
             padding: '6px 14px',
             borderRadius: '20px',
             fontSize: '0.82rem',
@@ -118,7 +118,7 @@ export default function DashboardView({
             <Clock size={14} />
             <span>{todayStr}</span>
           </div>
-          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
+          <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
             Daily Accounting & Stock Registers Active
           </span>
         </div>
@@ -128,105 +128,105 @@ export default function DashboardView({
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: '18px',
+        gap: '16px',
         marginBottom: '24px'
       }}>
-        {/* KPI 1: Total Bank & Cash Balance */}
+        {/* KPI 1: Bank & Cash Liquidity */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(15, 23, 42, 0.8) 100%)',
-          border: '1px solid rgba(16, 185, 129, 0.3)',
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)',
+          borderTop: '4px solid #10b981',
           borderRadius: '14px',
           padding: '20px',
-          position: 'relative',
-          overflow: 'hidden'
+          boxShadow: 'var(--shadow-sm)'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Total Bank & Cash Liquidity
             </span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669' }}>
               <Landmark size={18} />
             </div>
           </div>
-          <div style={{ fontSize: '1.65rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', marginBottom: '6px' }}>
+          <div style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', marginBottom: '6px' }}>
             {formatMoney(totalBankBalance)}
           </div>
-          <span style={{ fontSize: '0.76rem', color: '#94a3b8' }}>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
             Across {bankAccounts.length} active bank & cash accounts
           </span>
         </div>
 
         {/* KPI 2: Total Stock Inventory Valuation */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(15, 23, 42, 0.8) 100%)',
-          border: '1px solid rgba(56, 189, 248, 0.3)',
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)',
+          borderTop: '4px solid #0284c7',
           borderRadius: '14px',
           padding: '20px',
-          position: 'relative',
-          overflow: 'hidden'
+          boxShadow: 'var(--shadow-sm)'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Stone Stock Valuation
             </span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(56, 189, 248, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(2, 132, 199, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0284c7' }}>
               <Layers size={18} />
             </div>
           </div>
-          <div style={{ fontSize: '1.65rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', marginBottom: '6px' }}>
+          <div style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', marginBottom: '6px' }}>
             {formatMoney(totalInventoryValuation)}
           </div>
-          <span style={{ fontSize: '0.76rem', color: '#94a3b8' }}>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
             {products.length} Stone catalog items in yard
           </span>
         </div>
 
         {/* KPI 3: Sales Turnover */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(15, 23, 42, 0.8) 100%)',
-          border: '1px solid rgba(99, 102, 241, 0.3)',
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)',
+          borderTop: '4px solid #6366f1',
           borderRadius: '14px',
           padding: '20px',
-          position: 'relative',
-          overflow: 'hidden'
+          boxShadow: 'var(--shadow-sm)'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#4f46e5', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Total Invoiced Sales
             </span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(99, 102, 241, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4f46e5' }}>
               <TrendingUp size={18} />
             </div>
           </div>
-          <div style={{ fontSize: '1.65rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', marginBottom: '6px' }}>
+          <div style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.02em', marginBottom: '6px' }}>
             {formatMoney(totalSalesRevenue)}
           </div>
-          <span style={{ fontSize: '0.76rem', color: '#94a3b8' }}>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
             {sales.length} GST Sales bills generated
           </span>
         </div>
 
         {/* KPI 4: Customer Outstanding Dues */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(15, 23, 42, 0.8) 100%)',
-          border: '1px solid rgba(239, 68, 68, 0.25)',
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)',
+          borderTop: '4px solid #ef4444',
           borderRadius: '14px',
           padding: '20px',
-          position: 'relative',
-          overflow: 'hidden'
+          boxShadow: 'var(--shadow-sm)'
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#f87171', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#dc2626', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Customer Receivables (Due)
             </span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f87171' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#dc2626' }}>
               <CreditCard size={18} />
             </div>
           </div>
-          <div style={{ fontSize: '1.65rem', fontWeight: 800, color: '#f87171', letterSpacing: '-0.02em', marginBottom: '6px' }}>
+          <div style={{ fontSize: '1.65rem', fontWeight: 800, color: '#dc2626', letterSpacing: '-0.02em', marginBottom: '6px' }}>
             {formatMoney(totalSalesDue)}
           </div>
-          <span style={{ fontSize: '0.76rem', color: '#94a3b8' }}>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
             Uncollected balance pending recovery
           </span>
         </div>
@@ -236,7 +236,7 @@ export default function DashboardView({
       <div className="card" style={{ marginBottom: '24px' }}>
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(56, 189, 248, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8' }}>
+            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: 'rgba(56, 189, 248, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-cyan)' }}>
               <Landmark size={18} />
             </div>
             <div>
@@ -277,8 +277,8 @@ export default function DashboardView({
               <div 
                 key={acc.id}
                 style={{
-                  background: 'rgba(15, 23, 42, 0.75)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-subtle)',
                   borderRadius: '12px',
                   padding: '16px 18px',
                   display: 'flex',
@@ -291,36 +291,37 @@ export default function DashboardView({
               >
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.98rem', color: '#f8fafc' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.98rem', color: 'var(--text-main)' }}>
                       {acc.name}
                     </span>
                     <span className="badge badge-paid" style={{ fontSize: '0.68rem' }}>
                       Active
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.76rem', color: '#94a3b8', fontFamily: 'monospace' }}>
-                    {acc.account_number ? `A/C •••• ${acc.account_number.slice(-4)}` : 'Main Cash Ledger'}
+                  <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                    {acc.account_type ? acc.account_type.toUpperCase() : 'CURRENT'} • {acc.account_number ? `A/C: ${acc.account_number}` : 'Cash Register'}
                   </div>
                 </div>
 
-                <div>
-                  <span style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    Available Balance
-                  </span>
-                  <div style={{
-                    fontSize: '1.35rem',
-                    fontWeight: 800,
-                    color: (parseFloat(acc.current_balance) || 0) >= 0 ? '#34d399' : '#f87171',
-                    letterSpacing: '-0.01em',
-                    marginTop: '2px'
-                  }}>
-                    {formatMoney(acc.current_balance)}
+                <div style={{ borderTop: '1px dashed var(--border-subtle)', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                  <div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block' }}>
+                      Available Balance
+                    </span>
+                    <span style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--text-main)' }}>
+                      {formatMoney(acc.current_balance)}
+                    </span>
                   </div>
+                  {acc.ifsc_code && (
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                      IFSC: {acc.ifsc_code}
+                    </span>
+                  )}
                 </div>
               </div>
             ))
           ) : (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
               No bank accounts configured. Configure accounts in Settings.
             </div>
           )}
@@ -329,7 +330,7 @@ export default function DashboardView({
 
       {/* 4. Quick Action Launchpad */}
       <div style={{ marginBottom: '24px' }}>
-        <h4 style={{ fontSize: '0.92rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>
+        <h4 style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>
           Quick Action Launchpad
         </h4>
         <div style={{
@@ -346,7 +347,7 @@ export default function DashboardView({
             <Plus size={18} />
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>+ New GST Bill</div>
-              <div style={{ fontSize: '0.72rem', opacity: 0.85 }}>Counter Sales Invoice</div>
+              <div style={{ fontSize: '0.72rem', opacity: 0.9 }}>Counter Sales Invoice</div>
             </div>
           </button>
 
@@ -356,10 +357,10 @@ export default function DashboardView({
             onClick={() => onNavigate('purchase')}
             style={{ padding: '14px 16px', justifyContent: 'flex-start', gap: '10px', borderRadius: '12px' }}
           >
-            <ShoppingBag size={18} color="#38bdf8" />
+            <ShoppingBag size={18} color="#0284c7" />
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>+ Inward Purchase</div>
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Quarry & Slabs Receipt</div>
+              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)' }}>+ Inward Purchase</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Quarry & Slabs Receipt</div>
             </div>
           </button>
 
@@ -369,10 +370,10 @@ export default function DashboardView({
             onClick={() => onNavigate('stock')}
             style={{ padding: '14px 16px', justifyContent: 'flex-start', gap: '10px', borderRadius: '12px' }}
           >
-            <Layers size={18} color="#34d399" />
+            <Layers size={18} color="#059669" />
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>+ Stock Inward</div>
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Manage Slabs & Adjust</div>
+              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)' }}>+ Stock Inward</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Manage Slabs & Adjust</div>
             </div>
           </button>
 
@@ -382,10 +383,10 @@ export default function DashboardView({
             onClick={() => onNavigate('daybook')}
             style={{ padding: '14px 16px', justifyContent: 'flex-start', gap: '10px', borderRadius: '12px' }}
           >
-            <Wallet size={18} color="#fbbf24" />
+            <Wallet size={18} color="#d97706" />
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>+ Daybook Cash</div>
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Receipts & Expenses</div>
+              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)' }}>+ Daybook Cash</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Receipts & Expenses</div>
             </div>
           </button>
 
@@ -395,10 +396,10 @@ export default function DashboardView({
             onClick={() => onNavigate('damage')}
             style={{ padding: '14px 16px', justifyContent: 'flex-start', gap: '10px', borderRadius: '12px' }}
           >
-            <AlertTriangle size={18} color="#f87171" />
+            <AlertTriangle size={18} color="#dc2626" />
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>+ Log Damage</div>
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Broken Stone Loss</div>
+              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)' }}>+ Log Damage</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Broken Stone Loss</div>
             </div>
           </button>
         </div>
@@ -411,7 +412,7 @@ export default function DashboardView({
         <div className="card" style={{ marginBottom: 0 }}>
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 className="card-title" style={{ margin: 0 }}>
-              <FileText size={18} color="#38bdf8" />
+              <FileText size={18} color="var(--primary)" />
               Recent GST Sales Bills
             </h3>
             <button className="btn btn-secondary btn-sm" onClick={() => onNavigate('sales')} style={{ fontSize: '0.75rem' }}>
@@ -433,10 +434,18 @@ export default function DashboardView({
                 {recentSales.length > 0 ? (
                   recentSales.map(s => (
                     <tr key={s.id}>
-                      <td className="font-mono" style={{ fontWeight: 700, color: '#f8fafc' }}>{s.bill_no}</td>
-                      <td>{s.customer_name}</td>
-                      <td style={{ color: '#94a3b8', fontSize: '0.78rem' }}>{s.date}</td>
-                      <td style={{ fontWeight: 700, color: '#38bdf8' }}>{formatMoney(s.total)}</td>
+                      <td className="font-mono" style={{ fontWeight: 700, color: 'var(--text-main)' }}>
+                        {s.bill_no}
+                      </td>
+                      <td style={{ fontWeight: 600, color: 'var(--text-main)' }}>
+                        {s.customer_name}
+                      </td>
+                      <td style={{ color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 500 }}>
+                        {s.date}
+                      </td>
+                      <td style={{ fontWeight: 700, color: 'var(--accent-cyan)' }}>
+                        {formatMoney(s.total)}
+                      </td>
                       <td>
                         <span className={`badge ${s.status === 'Paid' ? 'badge-paid' : 'badge-overdue'}`}>
                           {s.status}
@@ -446,7 +455,7 @@ export default function DashboardView({
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                    <td colSpan="5" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                       No sales recorded yet. Click "+ New GST Bill" to start billing.
                     </td>
                   </tr>
@@ -460,7 +469,7 @@ export default function DashboardView({
         <div className="card" style={{ marginBottom: 0 }}>
           <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertTriangle size={18} color="#f87171" />
+              <AlertTriangle size={18} color="#dc2626" />
               <h3 className="card-title" style={{ margin: 0 }}>Low Stock & Inventory Watchlist</h3>
             </div>
             <button className="btn btn-secondary btn-sm" onClick={() => onNavigate('stock')} style={{ fontSize: '0.75rem' }}>
@@ -483,13 +492,15 @@ export default function DashboardView({
                     const isLow = (parseFloat(p.current_stock) || 0) <= (parseFloat(p.min_stock) || 10);
                     return (
                       <tr key={p.id}>
-                        <td style={{ fontWeight: 600, color: '#f8fafc' }}>{p.name}</td>
+                        <td style={{ fontWeight: 700, color: 'var(--text-main)' }}>
+                          {p.name}
+                        </td>
                         <td>
-                          <span className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8' }}>
+                          <span className="badge" style={{ background: 'var(--bg-secondary)', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)', fontWeight: 600 }}>
                             {p.category || 'Granite'}
                           </span>
                         </td>
-                        <td style={{ fontWeight: 700, color: isLow ? '#f87171' : '#34d399' }}>
+                        <td style={{ fontWeight: 700, color: isLow ? '#dc2626' : '#059669' }}>
                           {p.current_stock} {p.unit || 'sqft'}
                         </td>
                         <td>
@@ -502,7 +513,7 @@ export default function DashboardView({
                   })
                 ) : (
                   <tr>
-                    <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                       No products found.
                     </td>
                   </tr>

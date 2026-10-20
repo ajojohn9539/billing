@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from database import get_db, query_all, query_one, execute_insert, execute_update
+from database import get_db, query_all, query_one, execute_insert, execute_update, record_audit_log
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -103,4 +103,5 @@ def delete_damage(damage_id: int):
             cur.execute("DELETE FROM stock_movements WHERE reference_type = 'damages' AND reference_id = %s", (damage_id,))
             cur.execute("UPDATE damages SET deleted_at = CURRENT_TIMESTAMP WHERE id = %s", (damage_id,))
 
+    record_audit_log("damages", damage_id, "DELETE", old_values=damage, details=f"Deleted damage #{damage_id} ({damage.get('reason')}) and restored stock")
     return {"message": "Damage record removed and stock restored successfully", "id": damage_id}

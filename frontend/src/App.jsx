@@ -10,6 +10,7 @@ import StockView from './components/StockView';
 import DamageEntryView from './components/DamageEntryView';
 import CustomersView from './components/CustomersView';
 import OthersView from './components/OthersView';
+import ArchivesView from './components/ArchivesView';
 import AdminPanelView from './components/AdminPanelView';
 import Loader from './components/Loader';
 import { api } from './services/api';
@@ -26,6 +27,25 @@ export default function App() {
   });
 
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem('billora_theme') || 'dark';
+    } catch (e) {
+      return 'dark';
+    }
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.body.className = theme === 'light' ? 'theme-light' : 'theme-dark';
+    try {
+      localStorage.setItem('billora_theme', theme);
+    } catch (e) {}
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
   const [currencySymbol, setCurrencySymbol] = useState('₹');
   const [companyName, setCompanyName] = useState('BILLORA MARBLES & GRANITES');
   const [globalLoading, setGlobalLoading] = useState(false);
@@ -43,7 +63,8 @@ export default function App() {
     damage: { title: 'Loading Damage & Breakage Register...', sub: 'Retrieving broken stone register, transit losses, and cutting losses' },
     contacts: { title: 'Loading Customers & Suppliers Directory...', sub: 'Fetching customer ledgers, supplier balances, and GSTIN directory' },
     others: { title: 'Loading Banking & Accounting Settings...', sub: 'Loading bank accounts, category registers, and system profile' },
-    admin: { title: 'Loading Sudo Controls & Admin Panel...', sub: 'Loading master controls, dynamic client fields, and staff roles' }
+    admin: { title: 'Loading Sudo Controls & Admin Panel...', sub: 'Loading master controls, dynamic client fields, and staff roles' },
+    archives: { title: 'Loading Inactive & Deleted Archives...', sub: 'Fetching recycle bin records and real-time action history logs' }
   };
 
   const handleTabChange = (newTab) => {
@@ -151,6 +172,8 @@ export default function App() {
         settings={settings}
         currentUser={currentUser}
         onLogout={handleLogout}
+        theme={theme}
+        toggleTheme={toggleTheme}
       />
 
       {/* Main Viewport */}
@@ -272,6 +295,14 @@ export default function App() {
             {activeTab === 'others' && (
               <OthersView 
                 settings={settings}
+                currency={currencySymbol}
+                onRefresh={refreshAll}
+              />
+            )}
+
+            {/* 9. Archives & Action History Audit Trail */}
+            {activeTab === 'archives' && (
+              <ArchivesView 
                 currency={currencySymbol}
                 onRefresh={refreshAll}
               />

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from database import get_db, query_all, query_one, execute_insert, execute_update
+from database import get_db, query_all, query_one, execute_insert, execute_update, record_audit_log
 from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import date, datetime

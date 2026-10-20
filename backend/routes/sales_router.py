@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from database import get_db, query_all, query_one, execute_insert, execute_update
+from database import get_db, query_all, query_one, execute_insert, execute_update, record_audit_log
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import date, datetime
@@ -240,6 +240,7 @@ def create_sale(payload: SaleCreate):
                     grand_total, paid, sale_id
                 ))
 
+    record_audit_log("sales", sale_id, "CREATE", new_values={"bill_no": bill_no, "total": grand_total, "customer": customer["name"]}, details=f"Generated Sales Bill #{bill_no} for {customer['name']} ({grand_total})")
     return get_sale(sale_id)
 
 @router.post("/{sale_id}/payment")
@@ -290,4 +291,5 @@ def delete_sale(sale_id: int):
             cur.execute("UPDATE sales SET deleted_at = CURRENT_TIMESTAMP WHERE id = %s", (sale_id,))
             cur.execute("UPDATE daybook SET deleted_at = CURRENT_TIMESTAMP WHERE source_type = 'sale' AND source_id = %s", (sale_id,))
 
+    record_audit_log("sales", sale_id, "DELETE", old_values=sale, details=f"Deleted Sales Bill #{sale['bill_no']} and restored stone stock")
     return {"message": "Sale bill deleted and stock restored successfully", "id": sale_id}

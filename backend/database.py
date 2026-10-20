@@ -235,6 +235,22 @@ def execute_update(sql: str, params: tuple = ()) -> int:
             cursor.execute(converted_sql, params)
             return cursor.rowcount
 
+def record_audit_log(table_name: str, record_id: int, action: str, old_values: dict = None, new_values: dict = None, user_id: int = None, user_name: str = "Billora Admin", details: str = None):
+    """Inserts a tracking record into audit_logs (temporary action history table)."""
+    try:
+        import json
+        old_json = json.dumps(clean_row(old_values), default=str) if old_values else None
+        new_json = json.dumps(clean_row(new_values), default=str) if new_values else None
+        
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO audit_logs (table_name, record_id, action, old_values, new_values, user_id, user_name, details, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+                """, (table_name, record_id, action.upper(), old_json, new_json, user_id, user_name or "System", details or f"{action.upper()} on {table_name} #{record_id}"))
+    except Exception as e:
+        print(f"[Audit Log Error] Failed to record action on {table_name}: {e}")
+
 def init_db():
     """Verifies database connection and auto-initializes tables if not present."""
     if IS_POSTGRES:
