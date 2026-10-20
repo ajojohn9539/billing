@@ -28,6 +28,7 @@ export default function Navbar({
   onQuickPurchase, 
   companyName, 
   settings, 
+  currentUser,
   onLogout,
   theme = 'dark',
   toggleTheme
@@ -57,16 +58,21 @@ export default function Navbar({
     };
   }, [isMenuOpen]);
 
-  // Determine current user & role
-  const currentUserStr = localStorage.getItem('billora_user');
-  let currentUser = null;
-  try {
-    currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
-  } catch (e) {
-    currentUser = null;
+  // Determine current user & role from props or storage
+  let user = currentUser;
+  if (!user) {
+    try {
+      const stored = localStorage.getItem('billing_user') || sessionStorage.getItem('billing_user') || localStorage.getItem('billora_user');
+      user = stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      user = null;
+    }
+  }
+  if (!user) {
+    user = { name: 'Admin Staff', role: 'admin' };
   }
 
-  const role = currentUser?.role || 'admin';
+  const role = (user?.role || 'admin').toLowerCase();
   const isSudo = role === 'sudo';
   const isAdmin = role === 'admin';
   const isAccountant = role === 'accountant';
@@ -412,36 +418,47 @@ export default function Navbar({
           <span style={{ color: 'var(--text-main)', fontSize: '0.78rem' }}>{theme === 'dark' ? 'Light' : 'Dark'}</span>
         </button>
 
-        {currentUser && (
-          <div className="user-profile-bar">
-            <div className="user-profile-badge" title={`${currentUser.name} (${currentUser.role})`}>
-              <div className="user-avatar-circle" style={{
-                background: isSudo ? 'linear-gradient(135deg, #7c3aed, #4c1d95)' : undefined
-              }}>
-                {isSudo ? <Crown size={14} /> : getInitials(currentUser.name)}
-              </div>
-              <div className="user-details-text">
-                <span className="user-name-display">{currentUser.name.split('(')[0].trim()}</span>
-                <span className="user-role-tag" style={{
-                  background: isSudo ? 'linear-gradient(135deg, #7c3aed, #4c1d95)' : undefined,
-                  color: isSudo ? '#ffffff' : undefined,
-                  fontWeight: isSudo ? 800 : undefined
-                }}>
-                  {currentUser.role.toUpperCase()}
-                </span>
-              </div>
+        {/* User Profile & Dedicated Logout Section in Header */}
+        <div className="user-profile-bar" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="user-profile-badge" title={`${user.name || 'User'} (${user.role || 'Staff'})`}>
+            <div className="user-avatar-circle" style={{
+              background: isSudo ? 'linear-gradient(135deg, #7c3aed, #4c1d95)' : undefined
+            }}>
+              {isSudo ? <Crown size={14} /> : getInitials(user.name || 'User')}
             </div>
-
-            <button 
-              className="btn-logout" 
-              onClick={onLogout} 
-              title="Sign Out of Terminal"
-            >
-              <LogOut size={16} />
-              <span className="logout-text">Logout</span>
-            </button>
+            <div className="user-details-text">
+              <span className="user-name-display">{(user.name || 'User').split('(')[0].trim()}</span>
+              <span className="user-role-tag" style={{
+                background: isSudo ? 'linear-gradient(135deg, #7c3aed, #4c1d95)' : undefined,
+                color: isSudo ? '#ffffff' : undefined,
+                fontWeight: isSudo ? 800 : undefined
+              }}>
+                {(user.role || 'ADMIN').toUpperCase()}
+              </span>
+            </div>
           </div>
-        )}
+
+          <button 
+            type="button"
+            className="btn-logout" 
+            onClick={onLogout} 
+            title="Sign Out of Billing Terminal"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '0.82rem',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <LogOut size={15} />
+            <span className="logout-text">Logout</span>
+          </button>
+        </div>
       </div>
     </header>
   );
