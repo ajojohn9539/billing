@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
-import { 
-  FileText, 
+import {
+  FileText,
+  Mail,
+  MessageSquare,
+  Download,
+  ExternalLink, 
   Search, 
   Plus, 
   Eye, 
@@ -66,6 +70,33 @@ export default function SalesView({ sales, customers, products, currency = '₹'
   const [selectedSale, setSelectedSale] = useState(null);
   const [printModalSale, setPrintModalSale] = useState(null);
   const [deleteModalSale, setDeleteModalSale] = useState(null);
+
+  // Quick Add Product State
+  const [quickAddProductOpen, setQuickAddProductOpen] = useState(false);
+  const [newProdName, setNewProdName] = useState('');
+  const [newProdCat, setNewProdCat] = useState('Granite');
+  const [newProdHsn, setNewProdHsn] = useState('6802');
+  const [newProdUnit, setNewProdUnit] = useState('sq.ft');
+  const [newProdRate, setNewProdRate] = useState(65);
+  const [newProdTax, setNewProdTax] = useState(18);
+  const [newProdStock, setNewProdStock] = useState(0);
+  const [quickProdLoading, setQuickProdLoading] = useState(false);
+
+  // Email State
+  const [emailModalSale, setEmailModalSale] = useState(null);
+  const [emailRecipient, setEmailRecipient] = useState('');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailResult, setEmailResult] = useState(null);
+
+  // WhatsApp State
+  const [whatsAppModalSale, setWhatsAppModalSale] = useState(null);
+  const [waPhone, setWaPhone] = useState('');
+  const [waMessage, setWaMessage] = useState('');
+  const [waShareUrl, setWaShareUrl] = useState('');
+  const [waSending, setWaSending] = useState(false);
+  const [waCopied, setWaCopied] = useState(false);
   const [isDeletingSale, setIsDeletingSale] = useState(false);
 
   // Form State
@@ -209,6 +240,116 @@ export default function SalesView({ sales, customers, products, currency = '₹'
   }, 0);
   const grandTotal = Math.max(0, subtotal - discountSum + taxSum + (parseFloat(transportCharges) || 0) + (parseFloat(roundOff) || 0));
   const balanceDue = Math.max(0, grandTotal - (parseFloat(amountReceived) || 0));
+
+    // Quick Add Product to catalog from billing
+  const handleSaveQuickProduct = async (e) => {
+    e.preventDefault();
+    if (!newProdName.trim()) {
+      alert('Please enter a product name');
+      return;
+    }
+    setQuickProdLoading(true);
+    try {
+      const newProd = await api.createProduct({
+        name: newProdName.trim(),
+        unit: newProdUnit,
+        purchase_price: Math.round(newProdRate * 0.7),
+        selling_price: parseFloat(newProdRate) || 0,
+        tax_percent: parseFloat(newProdTax) || 18,
+        hsn_code: newProdHsn.trim() || '6802',
+        opening_stock: parseFloat(newProdStock) || 0,
+        min_stock: 10,
+        status: 'Active'
+      });
+      if (onRefresh) onRefresh();
+      // Add as row in current bill
+      setItems([
+        ...items,
+        {
+          product_id: newProd.id,
+          qty: 15,
+          rate: newProd.selling_price || 60,
+          discount: 0,
+          tax_percent: newProd.tax_percent || 18,
+          hsn_code: newProd.hsn_code || '6802'
+        }
+      ]);
+      setQuickAddProductOpen(false);
+    } catch (err) {
+      alert('Failed to create product: ' + err.message);
+    } finally {
+      setQuickProdLoading(false);
+    }
+  };
+
+  // Email Handlers
+  const handleOpenEmail = (sale) => {
+    setEmailResult(null);
+    setEmailModalSale(sale);
+    const cust = customers.find(c => String(c.id) === String(sale.customer_id));
+    setEmailRecipient(cust?.email || (sale.customer_phone?.includes('@') ? sale.customer_phone : ''));
+    const compName = settings?.company_name || 'Billora Marbles & Granites';
+    setEmailSubject(`GST Tax Invoice #${sale.bill_no} - ${compName}`);
+    setEmailBody(`Dear ${sale.customer_name || 'Customer'},\n\nPlease find attached your GST Tax Invoice (${sale.bill_no}) from ${compName}.\n\nTotal Amount: ${formatMoney(sale.total)}\nAmount Paid: ${formatMoney(sale.paid)}\nBalance Due: ${formatMoney(sale.due)}\n\nThank you for choosing ${compName}!`);
+  };
+
+  const handleSendEmailSubmit = async (e) => {
+    e.preventDefault();
+    if (!emailRecipient.trim()) {
+      alert('Please enter recipient email');
+      return;
+    }
+    setEmailSending(true);
+    setEmailResult(null);
+    try {
+      const res = await api.sendSaleEmail(emailModalSale.id, {
+        recipient_email: emailRecipient.trim(),
+        subject: emailSubject.trim(),
+        message: emailBody.trim()
+      });
+      setEmailResult({ success: true, message: res.message });
+    } catch (err) {
+      setEmailResult({ success: false, message: err.message });
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
+  // WhatsApp Handlers
+  const handleOpenWhatsApp = async (sale) => {
+    setWaCopied(false);
+    setWhatsAppModalSale(sale);
+    try {
+      const res = await api.getSaleWhatsapp(sale.id, sale.customer_phone || '');
+      setWaPhone(res.phone || sale.customer_phone || '');
+      setWaMessage(res.text || '');
+      setWaShareUrl(res.url || '');
+    } catch (e) {
+      setWaPhone(sale.customer_phone || '');
+      setWaMessage(`*GST TAX INVOICE - ${settings?.company_name || 'BILLORA MARBLES'}*\nInvoice No: ${sale.bill_no}\nCustomer: ${sale.customer_name}\nTotal: ${formatMoney(sale.total)}\nDue: ${formatMoney(sale.due)}`);
+    }
+  };
+
+  const handleWhatsAppSend = async () => {
+    try {
+      setWaSending(true);
+      const res = await api.sendSaleWhatsapp(whatsAppModalSale.id, {
+        phone: waPhone,
+        message: waMessage
+      });
+      window.open(res.url, '_blank', 'noopener,noreferrer');
+    } catch (e) {
+      window.open(waShareUrl || `https://api.whatsapp.com/send?text=${encodeURIComponent(waMessage)}`, '_blank');
+    } finally {
+      setWaSending(false);
+    }
+  };
+
+  const handleCopyWhatsAppText = () => {
+    navigator.clipboard.writeText(waMessage);
+    setWaCopied(true);
+    setTimeout(() => setWaCopied(false), 2500);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -415,6 +556,32 @@ export default function SalesView({ sales, customers, products, currency = '₹'
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
+                        <a 
+                          href={api.getSalePdfUrl(s.id)} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="btn btn-sm btn-secondary" 
+                          title="Generate & Download PDF"
+                          style={{ padding: '4px 7px' }}
+                        >
+                          <Download size={13} style={{ color: 'var(--primary)' }} />
+                        </a>
+                        <button 
+                          className="btn btn-sm btn-secondary" 
+                          onClick={() => handleOpenEmail(s)}
+                          title="Send GST Invoice PDF via Email"
+                          style={{ padding: '4px 7px' }}
+                        >
+                          <Mail size={13} style={{ color: '#0284c7' }} />
+                        </button>
+                        <button 
+                          className="btn btn-sm btn-secondary" 
+                          onClick={() => handleOpenWhatsApp(s)}
+                          title="Share Invoice via WhatsApp"
+                          style={{ padding: '4px 7px' }}
+                        >
+                          <MessageSquare size={13} style={{ color: '#059669' }} />
+                        </button>
                         <button className="btn btn-sm btn-secondary" onClick={() => handleViewAndPrint(s.id)} title="Print GST Tax Invoice">
                           <Printer size={13} />
                         </button>
@@ -560,9 +727,14 @@ export default function SalesView({ sales, customers, products, currency = '₹'
                   <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     3. Products / Stone Slabs (HSN 6802)
                   </div>
-                  <button type="button" className="btn btn-sm btn-secondary" onClick={handleAddItem}>
-                    <Plus size={14} /> Add Stone Item
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button type="button" className="btn btn-sm btn-secondary" onClick={() => setQuickAddProductOpen(true)}>
+                      <Plus size={14} /> Quick Add Product
+                    </button>
+                    <button type="button" className="btn btn-sm btn-primary" onClick={handleAddItem}>
+                      <Plus size={14} /> Add Stone Item
+                    </button>
+                  </div>
                 </div>
 
                 <div style={{ border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: '1rem' }}>
@@ -570,6 +742,7 @@ export default function SalesView({ sales, customers, products, currency = '₹'
                     <thead>
                       <tr style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)' }}>
                         <th style={{ padding: '8px 12px', textAlign: 'left' }}>Stone / Slab Product *</th>
+                        <th style={{ padding: '8px 6px', width: '100px', textAlign: 'center' }} title="Current stock in warehouse - Disabled reference only">Rem. Stock</th>
                         <th style={{ padding: '8px 8px', width: '90px' }}>HSN</th>
                         <th style={{ padding: '8px 8px', width: '90px' }}>Qty (sqft)</th>
                         <th style={{ padding: '8px 8px', width: '100px' }}>Rate ({currency})</th>
@@ -600,6 +773,31 @@ export default function SalesView({ sales, customers, products, currency = '₹'
                                   </option>
                                 ))}
                               </select>
+                            </td>
+                            {/* REMAINING STOCK DISABLED INPUT */}
+                            <td style={{ padding: '6px 6px', textAlign: 'center' }}>
+                              <input 
+                                type="text" 
+                                className="form-input font-mono" 
+                                disabled 
+                                readOnly 
+                                value={(() => {
+                                  const p = products.find(prod => prod.id === Number(it.product_id));
+                                  return p ? `${p.current_stock ?? 0} ${p.unit || 'sqft'}` : '—';
+                                })()} 
+                                title="Available stock in inventory (Disabled reference view)"
+                                style={{ 
+                                  padding: '6px 4px', 
+                                  fontSize: '0.78rem', 
+                                  textAlign: 'center', 
+                                  background: 'var(--bg-secondary)', 
+                                  color: 'var(--text-muted)', 
+                                  fontWeight: 700, 
+                                  width: '100px', 
+                                  cursor: 'not-allowed', 
+                                  borderColor: 'var(--border-subtle)' 
+                                }} 
+                              />
                             </td>
                             <td style={{ padding: '6px 8px' }}>
                               <input 
@@ -1124,6 +1322,162 @@ export default function SalesView({ sales, customers, products, currency = '₹'
           </div>
         ) : null}
       />
+ 
+      {/* Quick Add Product Modal */}
+      {quickAddProductOpen && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="modal-container modal-sm">
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Layers size={18} style={{ color: 'var(--primary)' }} />
+                <h4 style={{ margin: 0 }}>Add New Stone Product</h4>
+              </div>
+              <button className="modal-close-btn" onClick={() => setQuickAddProductOpen(false)}><X size={18} /></button>
+            </div>
+            <form onSubmit={handleSaveQuickProduct}>
+              <div className="modal-body">
+                <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                  <label className="form-label">Product / Stone Name *</label>
+                  <input type="text" className="form-input" placeholder="e.g. Desert Brown Granite" value={newProdName} onChange={(e) => setNewProdName(e.target.value)} required />
+                </div>
+                <div className="form-row" style={{ marginBottom: '0.75rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Category</label>
+                    <select className="form-select" value={newProdCat} onChange={(e) => setNewProdCat(e.target.value)}>
+                      <option value="Granite">Granite</option>
+                      <option value="Marble">Marble</option>
+                      <option value="Quartz">Quartz</option>
+                      <option value="Sandstone">Sandstone</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Unit</label>
+                    <select className="form-select" value={newProdUnit} onChange={(e) => setNewProdUnit(e.target.value)}>
+                      <option value="sq.ft">sq.ft</option>
+                      <option value="nos">nos</option>
+                      <option value="ton">ton</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Rate ({currency})</label>
+                    <input type="number" step="any" className="form-input font-mono" value={newProdRate} onChange={(e) => setNewProdRate(e.target.value)} required />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Opening Stock</label>
+                    <input type="number" step="any" className="form-input font-mono" value={newProdStock} onChange={(e) => setNewProdStock(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setQuickAddProductOpen(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={quickProdLoading}>
+                  {quickProdLoading ? 'Saving...' : 'Save & Add to Bill'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Send Sale Email Modal */}
+      {emailModalSale && (
+        <div className="modal-overlay">
+          <div className="modal-container modal-md">
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Mail size={18} style={{ color: '#0284c7' }} />
+                <h4 style={{ margin: 0 }}>Send GST Tax Invoice PDF via Email</h4>
+              </div>
+              <button className="modal-close-btn" onClick={() => setEmailModalSale(null)}><X size={18} /></button>
+            </div>
+            <form onSubmit={handleSendEmailSubmit}>
+              <div className="modal-body">
+                {emailResult && (
+                  <div style={{ padding: '0.75rem', marginBottom: '1rem', borderRadius: '4px', fontSize: '0.84rem', background: emailResult.success ? 'var(--success-bg)' : 'var(--danger-bg)', color: emailResult.success ? 'var(--success)' : 'var(--danger)' }}>
+                    {emailResult.message}
+                  </div>
+                )}
+                <div className="form-group" style={{ marginBottom: '0.8rem' }}>
+                  <label className="form-label">Recipient Email *</label>
+                  <input type="email" className="form-input" value={emailRecipient} onChange={(e) => setEmailRecipient(e.target.value)} required />
+                </div>
+                <div className="form-group" style={{ marginBottom: '0.8rem' }}>
+                  <label className="form-label">Subject</label>
+                  <input type="text" className="form-input" value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} required />
+                </div>
+                <div className="form-group" style={{ marginBottom: '0.8rem' }}>
+                  <label className="form-label">Message</label>
+                  <textarea className="form-textarea" rows={4} value={emailBody} onChange={(e) => setEmailBody(e.target.value)} />
+                </div>
+                <div style={{ background: 'var(--bg-secondary)', padding: '0.6rem 0.8rem', borderRadius: '4px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Download size={14} style={{ color: 'var(--primary)' }} />
+                  <span>Attachment: <strong>Invoice_{emailModalSale.bill_no.replace(/ /g, '_')}.pdf</strong></span>
+                </div>
+              </div>
+              <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
+                <a href={`mailto:${encodeURIComponent(emailRecipient)}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`} className="btn btn-sm btn-secondary" target="_blank" rel="noreferrer">
+                  <ExternalLink size={13} /> Open Mail Client
+                </a>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setEmailModalSale(null)}>Close</button>
+                  <button type="submit" className="btn btn-primary" disabled={emailSending}>
+                    {emailSending ? 'Sending...' : 'Send Email with PDF'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Send Sale WhatsApp Modal */}
+      {whatsAppModalSale && (
+        <div className="modal-overlay">
+          <div className="modal-container modal-md">
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <MessageSquare size={18} style={{ color: '#059669' }} />
+                <h4 style={{ margin: 0 }}>Send GST Invoice via WhatsApp</h4>
+              </div>
+              <button className="modal-close-btn" onClick={() => setWhatsAppModalSale(null)}><X size={18} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group" style={{ marginBottom: '0.8rem' }}>
+                <label className="form-label">Customer Mobile / WhatsApp Number *</label>
+                <input type="text" className="form-input font-mono" value={waPhone} onChange={(e) => {
+                  setWaPhone(e.target.value);
+                  const clean = e.target.value.replace(/\D/g, '');
+                  const phoneWithCode = clean.length === 10 ? '91' + clean : clean;
+                  setWaShareUrl(`https://api.whatsapp.com/send?phone=${phoneWithCode}&text=${encodeURIComponent(waMessage)}`);
+                }} />
+              </div>
+              <div className="form-group" style={{ marginBottom: '0.8rem' }}>
+                <label className="form-label">Invoice Message Template</label>
+                <textarea className="form-textarea font-mono" rows={8} style={{ fontSize: '0.8rem' }} value={waMessage} onChange={(e) => {
+                  setWaMessage(e.target.value);
+                  const clean = waPhone.replace(/\D/g, '');
+                  const phoneWithCode = clean.length === 10 ? '91' + clean : clean;
+                  setWaShareUrl(`https://api.whatsapp.com/send?phone=${phoneWithCode}&text=${encodeURIComponent(e.target.value)}`);
+                }} />
+              </div>
+            </div>
+            <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
+              <button type="button" className="btn btn-secondary" onClick={handleCopyWhatsAppText}>
+                <Copy size={14} /> {waCopied ? 'Copied!' : 'Copy Text'}
+              </button>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button type="button" className="btn btn-secondary" onClick={() => setWhatsAppModalSale(null)}>Cancel</button>
+                <button type="button" className="btn btn-success" onClick={handleWhatsAppSend} disabled={waSending}>
+                  <MessageSquare size={14} /> Open WhatsApp Web / App
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

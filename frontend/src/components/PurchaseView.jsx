@@ -25,6 +25,12 @@ export default function PurchaseView({ purchases, suppliers, products, currency 
   const [transportCharges, setTransportCharges] = useState(0);
   const [roundOff, setRoundOff] = useState(0);
   const [amountPaidNow, setAmountPaidNow] = useState(0);
+  const [quickAddProductOpen, setQuickAddProductOpen] = useState(false);
+  const [newProdName, setNewProdName] = useState('');
+  const [newProdUnit, setNewProdUnit] = useState('sq.ft');
+  const [newProdRate, setNewProdRate] = useState(60);
+  const [newProdStock, setNewProdStock] = useState(0);
+  const [quickProdLoading, setQuickProdLoading] = useState(false);
   const [items, setItems] = useState([
     { product_id: '', qty: 100, rate: 140, discount: 0, tax_percent: 18 }
   ]);
@@ -70,6 +76,32 @@ export default function PurchaseView({ purchases, suppliers, products, currency 
     const updated = [...items];
     updated[index] = { ...updated[index], [field]: val };
     setItems(updated);
+  };
+
+    const handleSaveQuickProduct = async (e) => {
+    e.preventDefault();
+    if (!newProdName.trim()) return;
+    setQuickProdLoading(true);
+    try {
+      const newProd = await api.createProduct({
+        name: newProdName.trim(),
+        unit: newProdUnit,
+        purchase_price: parseFloat(newProdRate) || 0,
+        selling_price: Math.round((parseFloat(newProdRate) || 0) * 1.3),
+        tax_percent: 18,
+        hsn_code: '6802',
+        opening_stock: parseFloat(newProdStock) || 0,
+        min_stock: 10,
+        status: 'Active'
+      });
+      if (onRefresh) onRefresh();
+      setItems([...items, { product_id: newProd.id, qty: 50, rate: newProd.purchase_price || 60, discount: 0, tax_percent: 18 }]);
+      setQuickAddProductOpen(false);
+    } catch (err) {
+      alert('Error creating product: ' + err.message);
+    } finally {
+      setQuickProdLoading(false);
+    }
   };
 
   const handleAddItem = () => {
@@ -349,18 +381,23 @@ export default function PurchaseView({ purchases, suppliers, products, currency 
                 {/* Item Rows */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', marginBottom: '0.5rem' }}>
                   <label className="form-label" style={{ marginBottom: 0 }}>Consignment Items (Stone Slabs / Tiles)</label>
-                  <button type="button" className="btn btn-sm btn-secondary" onClick={handleAddItem}>
-                    <Plus size={14} />
-                    <span>Add Row</span>
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button type="button" className="btn btn-sm btn-secondary" onClick={() => setQuickAddProductOpen(true)}>
+                      <Plus size={14} /> <span>Quick Add Product</span>
+                    </button>
+                    <button type="button" className="btn btn-sm btn-primary" onClick={handleAddItem}>
+                      <Plus size={14} /> <span>Add Row</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="table-responsive">
                   <table className="items-table">
                     <thead>
                       <tr>
-                        <th style={{ width: '30%' }}>Stone Item *</th>
-                        <th style={{ width: '15%' }}>Quantity</th>
+                        <th style={{ width: '28%' }}>Stone Item *</th>
+                        <th style={{ width: '14%', textAlign: 'center' }}>Rem. Stock</th>
+                        <th style={{ width: '13%' }}>Quantity</th>
                         <th style={{ width: '15%' }}>Rate ({currency})</th>
                         <th style={{ width: '12%' }}>Discount</th>
                         <th style={{ width: '12%' }}>Tax %</th>
@@ -385,6 +422,29 @@ export default function PurchaseView({ purchases, suppliers, products, currency 
                                   <option key={p.id} value={p.id}>{p.name} ({p.unit})</option>
                                 ))}
                               </select>
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <input 
+                                type="text" 
+                                disabled 
+                                readOnly 
+                                value={(() => {
+                                  const p = products.find(pr => pr.id === Number(row.product_id));
+                                  return p ? `${p.current_stock ?? 0} ${p.unit || 'sq.ft'}` : '—';
+                                })()} 
+                                style={{ 
+                                  width: '100%', 
+                                  padding: '0.45rem', 
+                                  background: 'var(--bg-secondary)', 
+                                  border: '1px solid var(--border-subtle)', 
+                                  color: 'var(--text-muted)', 
+                                  borderRadius: '4px', 
+                                  textAlign: 'center', 
+                                  fontWeight: 700,
+                                  cursor: 'not-allowed'
+                                }} 
+                                title="Current available stock in warehouse (Disabled view)"
+                              />
                             </td>
                             <td>
                               <input type="number" step="any" min="0.1" value={row.qty} onChange={(e) => handleItemChange(idx, 'qty', e.target.value)} required />
@@ -602,6 +662,47 @@ export default function PurchaseView({ purchases, suppliers, products, currency 
           </div>
         ) : null}
       />
+ 
+      {/* Quick Add Product Modal */}
+      {quickAddProductOpen && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="modal-container modal-sm">
+            <div className="modal-header">
+              <h4 style={{ margin: 0 }}>Add New Stone Product</h4>
+              <button className="modal-close-btn" onClick={() => setQuickAddProductOpen(false)}><X size={18} /></button>
+            </div>
+            <form onSubmit={handleSaveQuickProduct}>
+              <div className="modal-body">
+                <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                  <label className="form-label">Product Name *</label>
+                  <input type="text" className="form-input" placeholder="e.g. Ruby Red Granite" value={newProdName} onChange={(e) => setNewProdName(e.target.value)} required />
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Unit</label>
+                    <select className="form-select" value={newProdUnit} onChange={(e) => setNewProdUnit(e.target.value)}>
+                      <option value="sq.ft">sq.ft</option>
+                      <option value="nos">nos</option>
+                      <option value="ton">ton</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Purchase Rate ({currency})</label>
+                    <input type="number" step="any" className="form-input font-mono" value={newProdRate} onChange={(e) => setNewProdRate(e.target.value)} required />
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setQuickAddProductOpen(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={quickProdLoading}>
+                  {quickProdLoading ? 'Saving...' : 'Save & Select in Bill'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  LayoutDashboard, 
+  LayoutDashboard,
+  Calculator, 
   FileText, 
   ShoppingBag, 
   Package, 
@@ -85,6 +86,7 @@ export default function Navbar({
     tabs = [
       { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
       { id: 'sales', label: 'Sales', icon: FileText },
+      { id: 'estimates', label: 'Estimations', icon: Calculator },
       { id: 'purchase', label: 'Purchase', icon: ShoppingBag },
       { id: 'daybook', label: 'Daybook', icon: BookOpen },
       // Remaining items in Menu bar
@@ -100,6 +102,7 @@ export default function Navbar({
     tabs = [
       { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
       { id: 'sales', label: 'Sales', icon: FileText },
+      { id: 'estimates', label: 'Estimations', icon: Calculator },
       { id: 'purchase', label: 'Purchase', icon: ShoppingBag },
       { id: 'daybook', label: 'Daybook', icon: BookOpen },
       // Remaining items in Menu bar
@@ -143,6 +146,7 @@ export default function Navbar({
     tabs = [
       { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
       { id: 'sales', label: 'Sales', icon: FileText },
+      { id: 'estimates', label: 'Estimations', icon: Calculator },
       { id: 'purchase', label: 'Purchase', icon: ShoppingBag },
       { id: 'daybook', label: 'Daybook', icon: BookOpen },
       { id: 'products', label: 'Products', icon: Package },

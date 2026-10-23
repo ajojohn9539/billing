@@ -4,6 +4,7 @@ import LoginView from './components/LoginView';
 import DashboardView from './components/DashboardView';
 import DaybookView from './components/DaybookView';
 import SalesView from './components/SalesView';
+import EstimatesView from './components/EstimatesView';
 import PurchaseView from './components/PurchaseView';
 import ProductsView from './components/ProductsView';
 import StockView from './components/StockView';
@@ -29,9 +30,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [theme, setTheme] = useState(() => {
     try {
-      return localStorage.getItem('billora_theme') || 'dark';
+      return localStorage.getItem('billora_theme') || 'light';
     } catch (e) {
-      return 'dark';
+      return 'light';
     }
   });
 
@@ -57,6 +58,7 @@ export default function App() {
     dashboard: { title: 'Loading Executive Dashboard...', sub: 'Syncing live business KPIs, bank balances, and inventory overview' },
     daybook: { title: 'Loading Daybook (Daily Register)...', sub: 'Syncing real-time cash, bank balances and inward/outward records' },
     sales: { title: 'Loading Sales & GST Billing...', sub: 'Preparing counter billing, customer ledger, and Rule 46 GST invoices' },
+    estimates: { title: 'Loading Stone Estimations & Quotes...', sub: 'Fetching draft quotations and proforma estimates' },
     purchase: { title: 'Loading Purchases & Stock Inward...', sub: 'Fetching stone supplier invoices, payables, and vehicle transport' },
     products: { title: 'Loading Stone & Product Catalog...', sub: 'Retrieving marble & granite catalogs, Sq.Ft. pricing and tax rates' },
     stock: { title: 'Loading Stone Inventory & Slabs Ledger...', sub: 'Calculating live Sq.Ft. stock counts, movements, and minimum stock alerts' },
@@ -229,6 +231,18 @@ export default function App() {
                 products={products}
                 currency={currencySymbol}
                 onRefresh={refreshAll}
+              />
+            )}
+
+            {/* 2b. Estimates & Quotations (Proforma Bill - No Stock / Account Impact) */}
+            {activeTab === 'estimates' && (
+              <EstimatesView 
+                customers={customers}
+                products={products}
+                currency={currencySymbol}
+                settings={settings}
+                onRefresh={refreshAll}
+                onNavigateToSale={() => handleTabChange('sales')}
               />
             )}
 

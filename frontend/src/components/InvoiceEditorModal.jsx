@@ -262,7 +262,8 @@ export default function InvoiceEditorModal({
                 <thead>
                   <tr>
                     <th style={{ width: '25%' }}>Preset / Item Name *</th>
-                    <th style={{ width: '25%' }}>Description</th>
+                    <th style={{ width: '12%', textAlign: 'center' }}>Rem. Stock</th>
+                    <th style={{ width: '20%' }}>Description</th>
                     <th style={{ width: '12%' }}>Qty</th>
                     <th style={{ width: '15%' }}>Price ({currency})</th>
                     <th style={{ width: '10%' }}>Tax %</th>

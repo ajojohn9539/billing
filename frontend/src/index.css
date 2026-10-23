@@ -1,104 +1,37 @@
 /* ==========================================================================
-   APEX BILLING DESIGN SYSTEM - VANILLA CSS
-   Aesthetic: Sleek Modern Dark Glassmorphism & High-Contrast Typography
+   STANDARD ENTERPRISE BILLING DESIGN SYSTEM - VANILLA CSS
+   Aesthetic: Clean Standard Business ERP (Crisp White / Slate Cards & Deep Navy Accent)
    ========================================================================== */
 
 :root {
-  /* Color Palette */
-  --bg-primary: #0a0e17;
-  --bg-secondary: #0f1626;
-  --bg-surface: #151d32;
-  --bg-surface-hover: #1c2744;
-  --bg-surface-glass: rgba(21, 29, 50, 0.75);
-  
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.15);
-  --border-glow: rgba(99, 102, 241, 0.3);
-
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --text-dim: #64748b;
-
-  /* Accent Colors */
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
-  --primary-light: rgba(99, 102, 241, 0.15);
-  
-  --accent-cyan: #06b6d4;
-  --accent-violet: #8b5cf6;
-
-  /* Semantic Colors */
-  --success: #10b981;
-  --success-bg: rgba(16, 185, 129, 0.12);
-  --success-border: rgba(16, 185, 129, 0.3);
-
-  --warning: #f59e0b;
-  --warning-bg: rgba(245, 158, 11, 0.12);
-  --warning-border: rgba(245, 158, 11, 0.3);
-
-  --danger: #ef4444;
-  --danger-bg: rgba(239, 68, 68, 0.12);
-  --danger-border: rgba(239, 68, 68, 0.3);
-
-  --info: #3b82f6;
-  --info-bg: rgba(59, 130, 246, 0.12);
-  --info-border: rgba(59, 130, 246, 0.3);
-
-  /* Shadows & Elevations */
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.25);
-
-  /* Typography & Sizing */
-  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --header-bg: rgba(15, 22, 38, 0.85);
-  --nav-bg: rgba(10, 14, 23, 0.6);
-  --table-th-bg: rgba(10, 14, 23, 0.4);
-  --table-hover-bg: rgba(255, 255, 255, 0.02);
-  --modal-header-bg: rgba(15, 22, 38, 0.6);
-}
-
-
-/* ==========================================================================
-   LIGHT MODE DESIGN SYSTEM
-   Aesthetic: Crisp Executive Stone ERP - High Contrast & Warm Slate Cards
-   ========================================================================== */
-
-:root[data-theme="light"], .theme-light {
-  /* Color Palette - Crisp Light Modern Stone ERP */
+  /* Color Palette - Clean Standard Business ERP */
   --bg-primary: #f8fafc;
   --bg-secondary: #f1f5f9;
   --bg-surface: #ffffff;
   --bg-surface-hover: #f8fafc;
-  --bg-surface-glass: rgba(255, 255, 255, 0.9);
+  --bg-surface-glass: #ffffff;
 
-  --header-bg: rgba(255, 255, 255, 0.95);
-  --nav-bg: #e2e8f0;
-  --table-th-bg: #f1f5f9;
-  --table-hover-bg: #f8fafc;
-  --modal-header-bg: #f8fafc;
+  --header-bg: #ffffff;
+  --nav-bg: #f1f5f9;
+  --table-th-bg: #f8fafc;
+  --table-hover-bg: #f1f5f9;
+  --modal-header-bg: #ffffff;
 
   --border-subtle: #e2e8f0;
   --border-strong: #cbd5e1;
-  --border-glow: rgba(79, 70, 229, 0.15);
+  --border-glow: transparent;
 
   --text-main: #0f172a;
   --text-muted: #334155;
-  --text-dim: #475569;
+  --text-dim: #64748b;
 
-  /* Accent Colors */
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --primary-light: rgba(79, 70, 229, 0.08);
+  /* Accent Colors - Standard Corporate Blue */
+  --primary: #1d4ed8;
+  --primary-hover: #1e40af;
+  --primary-light: rgba(29, 78, 216, 0.08);
 
   --accent-cyan: #0284c7;
-  --accent-violet: #7c3aed;
+  --accent-violet: #6d28d9;
 
   /* Semantic Colors */
   --success: #059669;
@@ -117,74 +50,54 @@
   --info-bg: rgba(37, 99, 235, 0.08);
   --info-border: rgba(37, 99, 235, 0.25);
 
-  /* Shadows & Elevations */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  /* Shadows & Elevations - Crisp Standard Subtle Shadows (No Fluorescent Glows) */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
-  --shadow-glow: 0 0 15px rgba(79, 70, 229, 0.12);
+  --shadow-glow: none;
+
+  /* Typography & Sizing */
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
 }
 
-[data-theme="light"] body, body.theme-light {
-  background: #f8fafc;
-  background-image: 
-    radial-gradient(at 10% 10%, rgba(79, 70, 229, 0.04) 0px, transparent 50%),
-    radial-gradient(at 90% 90%, rgba(2, 132, 199, 0.04) 0px, transparent 50%),
-    radial-gradient(at 50% 50%, rgba(124, 58, 237, 0.02) 0px, transparent 60%);
-  color: var(--text-main);
-}
+/* Standard Dark Mode (If user toggles dark mode - Clean Matte Charcoal Slate) */
+:root[data-theme="dark"], .theme-dark {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-surface: #1e293b;
+  --bg-surface-hover: #334155;
+  --bg-surface-glass: #1e293b;
 
-[data-theme="light"] .brand-info h1, body.theme-light .brand-info h1 {
-  background: linear-gradient(90deg, #0f172a 0%, #334155 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
+  --header-bg: #1e293b;
+  --nav-bg: #0f172a;
+  --table-th-bg: #0f172a;
+  --table-hover-bg: #334155;
+  --modal-header-bg: #1e293b;
 
-[data-theme="light"] .nav-tab-btn:hover, body.theme-light .nav-tab-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--text-main);
-}
+  --border-subtle: #334155;
+  --border-strong: #475569;
+  --border-glow: transparent;
 
-[data-theme="light"] .form-input, 
-[data-theme="light"] .form-select, 
-[data-theme="light"] .form-textarea,
-body.theme-light .form-input,
-body.theme-light .form-select,
-body.theme-light .form-textarea {
-  background: #ffffff;
-  border-color: #cbd5e1;
-  color: #0f172a;
-}
+  --text-main: #f8fafc;
+  --text-muted: #cbd5e1;
+  --text-dim: #94a3b8;
 
-[data-theme="light"] .search-input, body.theme-light .search-input {
-  background: #ffffff;
-  border-color: #cbd5e1;
-  color: #0f172a;
-}
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --primary-light: rgba(59, 130, 246, 0.15);
 
-[data-theme="light"] .user-profile-badge, body.theme-light .user-profile-badge {
-  background: #ffffff;
-  border-color: #e2e8f0;
-}
+  --accent-cyan: #38bdf8;
+  --accent-violet: #a78bfa;
 
-[data-theme="light"] .user-name-display, body.theme-light .user-name-display {
-  color: #0f172a;
-}
-
-[data-theme="light"] .btn-secondary, body.theme-light .btn-secondary {
-  background: #ffffff;
-  border-color: #cbd5e1;
-  color: #334155;
-}
-
-[data-theme="light"] .btn-secondary:hover, body.theme-light .btn-secondary:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
-  color: #0f172a;
-}
-
-[data-theme="light"] .modal-overlay, body.theme-light .modal-overlay {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(8px);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.5);
+  --shadow-glow: none;
 }
 
 /* Reset & Base */
@@ -197,15 +110,34 @@ body.theme-light .form-textarea {
 body {
   font-family: var(--font-sans);
   background: var(--bg-primary);
-  background-image: 
-    radial-gradient(at 10% 10%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
-    radial-gradient(at 90% 90%, rgba(6, 182, 212, 0.06) 0px, transparent 50%),
-    radial-gradient(at 50% 50%, rgba(139, 92, 246, 0.04) 0px, transparent 60%);
-  background-attachment: fixed;
   color: var(--text-main);
   line-height: 1.5;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Standard Disabled & Readonly Input Fields Across Application */
+.form-input:disabled, 
+.form-select:disabled, 
+.form-textarea:disabled,
+.form-input[readonly], 
+.form-select[readonly], 
+.form-textarea[readonly] {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--text-dim) !important;
+  cursor: not-allowed !important;
+  opacity: 0.9 !important;
+  font-weight: 600 !important;
+}
+
+.brand-info h1 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text-main) !important;
+  -webkit-text-fill-color: var(--text-main) !important;
+  background: none !important;
 }
 
 /* App Container Layout */
@@ -248,7 +180,7 @@ body {
   color: #fff;
   font-weight: 800;
   font-size: 1.35rem;
-  box-shadow: 0 0 16px rgba(99, 102, 241, 0.4);
+  box-shadow: var(--shadow-sm);
 }
 
 .brand-info h1 {
@@ -303,7 +235,7 @@ body {
 .nav-tab-btn.active {
   color: #fff;
   background: var(--primary);
-  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35);
+  box-shadow: var(--shadow-sm);
 }
 
 .nav-tab-btn svg {
@@ -344,7 +276,7 @@ body {
 
 .btn-primary:hover {
   background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.45);
+  box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 
@@ -743,7 +675,7 @@ body {
   background: var(--bg-surface);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  box-shadow: var(--shadow-lg);
   width: 100%;
   max-width: 720px;
   max-height: 90vh;
@@ -2251,7 +2183,7 @@ body {
 .nav-tab-menu.active {
   background: var(--primary);
   color: #ffffff;
-  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35);
+  box-shadow: var(--shadow-sm);
 }
 
 .nav-dropdown-menu {

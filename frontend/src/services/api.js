@@ -116,6 +116,33 @@ export const api = {
   createSale: (data) => request('/sales', { method: 'POST', body: JSON.stringify(data) }),
   addSaleReceipt: (id, data) => request(`/sales/${id}/payment`, { method: 'POST', body: JSON.stringify(data) }),
   deleteSale: (id) => request(`/sales/${id}`, { method: 'DELETE' }),
+  getSalePdfUrl: (id) => `/api/sales/${id}/pdf`,
+  sendSaleEmail: (id, data) => request(`/sales/${id}/send-email`, { method: 'POST', body: JSON.stringify(data) }),
+  getSaleWhatsapp: (id, phone = '') => request(`/sales/${id}/whatsapp${phone ? `?phone=${encodeURIComponent(phone)}` : ''}`),
+  sendSaleWhatsapp: (id, data) => request(`/sales/${id}/send-whatsapp`, { method: 'POST', body: JSON.stringify(data) }),
+
+  // 4b. Estimates & Quotations (Estimate Bill)
+  getEstimates: (params = {}) => {
+    const sp = new URLSearchParams();
+    if (params.customer_id) sp.append('customer_id', params.customer_id);
+    if (params.status) sp.append('status', params.status);
+    if (params.search) sp.append('search', params.search);
+    if (params.start_date) sp.append('start_date', params.start_date);
+    if (params.end_date) sp.append('end_date', params.end_date);
+    const qs = sp.toString();
+    return request(`/estimates${qs ? `?${qs}` : ''}`);
+  },
+  getEstimate: (id) => request(`/estimates/${id}`),
+  getNextEstimateNo: () => request('/estimates/next-estimate-no'),
+  createEstimate: (data) => request('/estimates', { method: 'POST', body: JSON.stringify(data) }),
+  updateEstimate: (id, data) => request(`/estimates/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  updateEstimateStatus: (id, status) => request(`/estimates/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
+  deleteEstimate: (id) => request(`/estimates/${id}`, { method: 'DELETE' }),
+  convertEstimateToSale: (id) => request(`/estimates/${id}/convert-to-sale`, { method: 'POST' }),
+  getEstimatePdfUrl: (id) => `/api/estimates/${id}/pdf`,
+  sendEstimateEmail: (id, data) => request(`/estimates/${id}/send-email`, { method: 'POST', body: JSON.stringify(data) }),
+  getEstimateWhatsapp: (id, phone = '') => request(`/estimates/${id}/whatsapp${phone ? `?phone=${encodeURIComponent(phone)}` : ''}`),
+  sendEstimateWhatsapp: (id, data) => request(`/estimates/${id}/send-whatsapp`, { method: 'POST', body: JSON.stringify(data) }),
 
   // 5. Damage Entry
   getDamages: (params = {}) => {

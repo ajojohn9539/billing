@@ -293,3 +293,214 @@ def delete_sale(sale_id: int):
 
     record_audit_log("sales", sale_id, "DELETE", old_values=sale, details=f"Deleted Sales Bill #{sale['bill_no']} and restored stone stock")
     return {"message": "Sale bill deleted and stock restored successfully", "id": sale_id}
+
+# ==============================================================================
+# SALES BILL PDF GENERATION, EMAIL SENDING & WHATSAPP SHARING
+# ==============================================================================
+from fastapi import Response
+import smtplib
+import urllib.parse
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
+from email import encoders
+from pdf_generator import build_sale_pdf
+
+class SaleEmailInput(BaseModel):
+    recipient_email: str
+    subject: Optional[str] = None
+    message: Optional[str] = None
+
+class SaleWhatsappInput(BaseModel):
+    phone: Optional[str] = ""
+    message: Optional[str] = None
+
+@router.get("/{sale_id}/pdf")
+def get_sale_pdf(sale_id: int):
+    data = get_sale(sale_id)
+    pdf_bytes = build_sale_pdf(data["sale"], data["items"], data.get("company"), data.get("bank"))
+    clean_no = data["sale"]["bill_no"].replace(" ", "_").replace("/", "-")
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename=Invoice_{clean_no}.pdf"}
+    )
+
+@router.post("/{sale_id}/send-email")
+def send_sale_email(sale_id: int, payload: SaleEmailInput):
+    data = get_sale(sale_id)
+    sale = data["sale"]
+    recipient = payload.recipient_email.strip()
+    if not recipient:
+        raise HTTPException(status_code=400, detail="Recipient email address is required")
+
+    company_name = data.get("company", {}).get("company_name", "Billora Marbles & Granites")
+    bill_no = sale["bill_no"]
+    subject = payload.subject or f"GST Tax Invoice #{bill_no} - {company_name}"
+    
+    body_text = payload.message or f"""Dear {sale.get('customer_name') or 'Customer'},
+
+Please find attached your GST Tax Invoice ({bill_no}) from {company_name}.
+
+Invoice Details:
+- Invoice No: {bill_no}
+- Date: {sale.get('date')}
+- Total Amount: ₹ {float(sale.get('total', 0)):,.2f}
+- Amount Paid: ₹ {float(sale.get('paid', 0)):,.2f}
+- Balance Due: ₹ {float(sale.get('due', 0)):,.2f}
+
+Thank you for your business!
+{company_name}
+"""
+
+    pdf_bytes = build_sale_pdf(sale, data["items"], data.get("company"), data.get("bank"))
+
+    backup_settings = query_one("SELECT * FROM backup_settings WHERE id = 1")
+    smtp_user = backup_settings.get("smtp_user") if backup_settings else None
+    smtp_pass = backup_settings.get("smtp_pass") if backup_settings else None
+    smtp_host = backup_settings.get("smtp_host", "smtp.gmail.com") if backup_settings else "smtp.gmail.com"
+    smtp_port = int(backup_settings.get("smtp_port", 587)) if backup_settings else 587
+
+    delivery_status = "Sent"
+    delivery_msg = f"Tax invoice PDF sent successfully to {recipient}"
+
+    if smtp_user and smtp_pass:
+        try:
+            msg = MIMEMultipart()
+            msg["From"] = smtp_user
+            msg["To"] = recipient
+            msg["Subject"] = subject
+            msg.attach(MIMEText(body_text, "plain"))
+
+            part = MIMEBase("application", "octet-stream")
+            part.set_payload(pdf_bytes)
+            encoders.encode_base64(part)
+            clean_no = bill_no.replace(" ", "_").replace("/", "-")
+            part.add_header("Content-Disposition", f'attachment; filename="Invoice_{clean_no}.pdf"')
+            msg.attach(part)
+
+            server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(smtp_user, recipient, msg.as_string())
+            server.quit()
+        except Exception as e:
+            delivery_status = "Error"
+            delivery_msg = f"SMTP Delivery warning: {str(e)[:120]}"
+    else:
+        delivery_status = "Prepared (SMTP not configured)"
+        delivery_msg = f"Tax invoice email prepared with PDF attachment. (To enable direct SMTP sending, configure SMTP credentials in Settings > Backup)."
+
+    record_audit_log(
+        "sales",
+        sale_id,
+        "SEND_EMAIL",
+        old_values=None,
+        new_values={"recipient": recipient, "status": delivery_status},
+        details=f"Email dispatch for Sales Bill {bill_no} to {recipient}: {delivery_msg}"
+    )
+
+    return {
+        "success": True,
+        "status": delivery_status,
+        "message": delivery_msg,
+        "recipient": recipient,
+        "subject": subject,
+        "bill_no": bill_no
+    }
+
+def _build_sale_whatsapp_text(data: dict) -> str:
+    sale = data["sale"]
+    items = data["items"]
+    company = data.get("company") or {}
+    bank = data.get("bank") or {}
+    
+    comp_name = company.get("company_name", "BILLORA MARBLES & GRANITES")
+    bill_no = sale.get("bill_no", "")
+    cust_name = sale.get("customer_name") or "Valued Client"
+    date_val = str(sale.get("date", ""))
+    total_val = float(sale.get("total", 0))
+    paid_val = float(sale.get("paid", 0))
+    due_val = float(sale.get("due", 0))
+
+    lines = [
+        f"🏛 *{comp_name}*",
+        f"🧾 *GST TAX INVOICE*",
+        f"━━━━━━━━━━━━━━━━━━━━━━",
+        f"📄 *Invoice No:* {bill_no}",
+        f"📅 *Date:* {date_val}",
+        f"👤 *Customer:* {cust_name}",
+        f"",
+        f"📦 *Products / Slabs:*"
+    ]
+    for it in items[:6]:
+        pname = it.get("product_name") or "Stone"
+        qty = float(it.get("qty", 0))
+        unit = it.get("unit", "sq.ft")
+        rate = float(it.get("rate", 0))
+        lines.append(f" • {pname}: {qty:.2f} {unit} @ ₹{rate:,.2f}")
+    if len(items) > 6:
+        lines.append(f" • ... and {len(items) - 6} more items")
+
+    lines.extend([
+        f"",
+        f"💰 *Total Amount:* ₹{total_val:,.2f}",
+        f"✅ *Paid:* ₹{paid_val:,.2f}",
+        f"⚠️ *Balance Due:* ₹{due_val:,.2f}",
+        f"━━━━━━━━━━━━━━━━━━━━━━",
+        f"🏦 *Bank Account Details:*",
+        f"Bank: {bank.get('bank_name', 'INDIAN BANK')}",
+        f"A/C: {bank.get('account_number', '—')} | IFSC: {bank.get('ifsc_code', '—')}",
+        f"",
+        f"Thank you for your business with {comp_name}!"
+    ])
+    return "\n".join(lines)
+
+@router.get("/{sale_id}/whatsapp")
+def get_sale_whatsapp(sale_id: int, phone: Optional[str] = None):
+    data = get_sale(sale_id)
+    sale = data["sale"]
+    target_phone = phone or sale.get("customer_phone") or ""
+    clean_phone = "".join(ch for ch in target_phone if ch.isdigit())
+    if len(clean_phone) == 10:
+        clean_phone = "91" + clean_phone
+
+    text = _build_sale_whatsapp_text(data)
+    encoded = urllib.parse.quote(text)
+    wa_url = f"https://api.whatsapp.com/send?phone={clean_phone}&text={encoded}" if clean_phone else f"https://api.whatsapp.com/send?text={encoded}"
+
+    return {
+        "phone": clean_phone,
+        "text": text,
+        "url": wa_url
+    }
+
+@router.post("/{sale_id}/send-whatsapp")
+def post_sale_whatsapp(sale_id: int, payload: SaleWhatsappInput):
+    data = get_sale(sale_id)
+    sale = data["sale"]
+    target_phone = payload.phone or sale.get("customer_phone") or ""
+    clean_phone = "".join(ch for ch in target_phone if ch.isdigit())
+    if len(clean_phone) == 10:
+        clean_phone = "91" + clean_phone
+
+    text = payload.message or _build_sale_whatsapp_text(data)
+    encoded = urllib.parse.quote(text)
+    wa_url = f"https://api.whatsapp.com/send?phone={clean_phone}&text={encoded}" if clean_phone else f"https://api.whatsapp.com/send?text={encoded}"
+
+    record_audit_log(
+        "sales",
+        sale_id,
+        "WHATSAPP_SHARE",
+        old_values=None,
+        new_values={"phone": clean_phone},
+        details=f"Shared Sales Bill {sale['bill_no']} via WhatsApp to {clean_phone or 'General'}"
+    )
+
+    return {
+        "success": True,
+        "phone": clean_phone,
+        "text": text,
+        "url": wa_url,
+        "message": "WhatsApp message generated and link ready!"
+    }

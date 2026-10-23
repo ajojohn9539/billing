@@ -262,6 +262,61 @@ def init_db():
                     cnt = cur.fetchone()
                     total = cnt['total_tables']
                     print(f"[Database] PostgreSQL connected successfully! Found {total} tables in public schema.")
+                    # Ensure estimates and estimate_items tables exist
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS estimates (
+                            id SERIAL PRIMARY KEY,
+                            estimate_no VARCHAR(100) NOT NULL UNIQUE,
+                            customer_id INT REFERENCES contacts(id) ON DELETE SET NULL,
+                            customer_name VARCHAR(200) NOT NULL,
+                            customer_phone VARCHAR(50),
+                            customer_address TEXT,
+                            customer_gstin VARCHAR(50),
+                            date DATE NOT NULL,
+                            valid_until DATE,
+                            status VARCHAR(50) NOT NULL DEFAULT 'Draft',
+                            subtotal DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                            discount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                            tax DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                            transport_charges DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                            round_off DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                            total DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                            notes TEXT,
+                            terms TEXT,
+                            converted_sale_id INT REFERENCES sales(id) ON DELETE SET NULL,
+                            created_by INT,
+                            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                            updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+                            deleted_at TIMESTAMPTZ
+                        );
+                        CREATE INDEX IF NOT EXISTS idx_estimates_customer ON estimates (customer_id);
+                        CREATE INDEX IF NOT EXISTS idx_estimates_date ON estimates (date);
+                        CREATE INDEX IF NOT EXISTS idx_estimates_no ON estimates (estimate_no);
+                        CREATE INDEX IF NOT EXISTS idx_estimates_status ON estimates (status);
+
+                        CREATE TABLE IF NOT EXISTS estimate_items (
+                            id SERIAL PRIMARY KEY,
+                            estimate_id INT NOT NULL REFERENCES estimates(id) ON DELETE CASCADE,
+                            product_id INT REFERENCES products(id) ON DELETE SET NULL,
+                            item_name VARCHAR(255) NOT NULL,
+                            item_description TEXT,
+                            hsn_code VARCHAR(50) DEFAULT '6802',
+                            length_in DECIMAL(10,2) DEFAULT NULL,
+                            height_in DECIMAL(10,2) DEFAULT NULL,
+                            pieces INT DEFAULT NULL,
+                            qty DECIMAL(12,2) NOT NULL,
+                            unit VARCHAR(50) NOT NULL DEFAULT 'sq.ft',
+                            rate DECIMAL(12,2) NOT NULL,
+                            discount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                            tax_percent DECIMAL(5,2) NOT NULL DEFAULT 18.00,
+                            tax_amount DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+                            total DECIMAL(12,2) NOT NULL,
+                            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+                        );
+                        CREATE INDEX IF NOT EXISTS idx_estimate_items_est ON estimate_items (estimate_id);
+                    """)
+                    conn._conn.commit()
+
                     if total == 0:
                         schema_file = Path(__file__).resolve().parent / "supabase_schema.sql"
                         if schema_file.exists():

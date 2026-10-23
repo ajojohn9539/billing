@@ -30,6 +30,7 @@ from routes.auth_router import router as auth_router
 from routes.backup_router import router as backup_router
 from routes.admin_router import router as admin_router
 from routes.archives_router import router as archives_router
+from routes.estimates_router import router as estimates_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -78,6 +79,7 @@ app.include_router(auth_router, prefix="/api")
 app.include_router(backup_router, prefix="/api")
 app.include_router(admin_router, prefix="/api")
 app.include_router(archives_router, prefix="/api")
+app.include_router(estimates_router, prefix="/api")
 
 
 @app.get("/api/db-diagnostic")
